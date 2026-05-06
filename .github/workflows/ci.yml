@@ -21,7 +21,9 @@ jobs:
           cache: npm
       - run: npm ci
       - run: npm run build
-      - name: MCP tool smoke test
+      - name: MCP tool registration smoke
         run: npm test
-      - name: CLI smoke test
+      - name: MCP end-to-end stdio test
+        run: node scripts/mcp-e2e.mjs
+      - name: CLI smoke
         run: node packages/cli/dist/index.js config
