@@ -1,6 +1,7 @@
 {
   "name": "@near-hydra/cli",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "description": "Unified CLI for NEAR — accounts, Chain Signatures, NEAR Intents — for humans and scripts.",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
@@ -10,8 +11,19 @@
   "scripts": {
     "build": "tsc -p ."
   },
+  "homepage": "https://github.com/nikshepsvn/near-hydra#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nikshepsvn/near-hydra.git",
+    "directory": "packages/cli"
+  },
+  "bugs": {
+    "url": "https://github.com/nikshepsvn/near-hydra/issues"
+  },
+  "keywords": ["near", "cli", "chain-signatures", "near-intents", "multichain"],
+  "license": "Apache-2.0",
   "dependencies": {
-    "@near-hydra/core": "0.0.1",
+    "@near-hydra/core": "0.1.0",
     "commander": "^12.1.0"
   }
 }

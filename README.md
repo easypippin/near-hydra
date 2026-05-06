@@ -1,81 +1,21 @@
+<div align="center">
+
 # near-hydra
 
-**Unofficial all-in-one CLI + MCP server for the NEAR stack.** One NEAR account becomes an agent's identity on every chain — Bitcoin, Ethereum, Polygon, Arbitrum, Base, Solana — via Chain Signatures, with cross-chain swaps via NEAR Intents 1Click.
+**One NEAR account. Every chain. Every agent.**
 
-> One body (a NEAR account), many heads (every chain). Cut off one head and the agent still works.
+Unified CLI + MCP server for the NEAR stack — accounts, Chain Signatures, NEAR Intents — built for AI agents and humans.
 
-## Why this exists
+[![CI](https://github.com/nikshepsvn/near-hydra/actions/workflows/ci.yml/badge.svg)](https://github.com/nikshepsvn/near-hydra/actions/workflows/ci.yml)
+[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)
+![Status](https://img.shields.io/badge/status-alpha-orange)
 
-The NEAR stack is powerful but fragmented across libraries: `near-api-js` for accounts, `chainsig.js` for cross-chain signing, `@defuse-protocol/one-click-sdk-typescript` for swaps, `shade-agent-cli` for autonomous agents. There's no unified, agent-ergonomic surface that composes them.
+</div>
 
-`near-hydra` is that composer. It exposes the full stack as:
-- a **CLI** (`near-hydra ...`) for humans and scripts
-- an **MCP server** (`near-hydra-mcp`) for Claude Code, Cursor, Codex, OpenAI Agents SDK, and any MCP client
+---
 
-Same code, two faces.
-
-## Status
-
-Pre-alpha. Read-only operations against mainnet work today: account inspection, address derivation across 6 chains, multi-chain balance aggregation, 1Click token discovery and quotes. Signing/sending and Shade lifecycle are next.
-
-## Install (from source)
-
-```bash
-git clone <this repo> && cd near
-npm install
-npm run build
-```
-
-There's no published npm package yet. Use the local CLI:
-
-```bash
-node packages/cli/dist/index.js <command>
-# or alias it:
-alias hydra="node $(pwd)/packages/cli/dist/index.js"
-```
-
-## Configuration
-
-Defaults are mainnet, no signing key (read-only). Override with a config file at `~/.near-hydra/config.json` or env vars.
-
-```json
-{
-  "network": "mainnet",
-  "account": {
-    "id": "alice.near",
-    "privateKey": "ed25519:..."
-  },
-  "rpc": {
-    "ethereum": "https://eth.llamarpc.com"
-  },
-  "oneClick": {
-    "apiKey": "your-1click-partner-key"
-  }
-}
-```
-
-### Env overrides (no config file required)
-
-| Variable | Effect |
-|---|---|
-| `NEAR_HYDRA_CONFIG` | Path to alternate config file |
-| `NEAR_HYDRA_NETWORK` | `mainnet` or `testnet` |
-| `NEAR_HYDRA_ACCOUNT_ID` | NEAR account id |
-| `NEAR_HYDRA_PRIVATE_KEY` | `ed25519:...` |
-| `NEAR_HYDRA_MPC_CONTRACT` | Override MPC contract (advanced) |
-| `NEAR_HYDRA_RPC_NEAR` | Override NEAR RPC URL |
-| `NEAR_HYDRA_RPC_ETHEREUM` | Override Ethereum RPC |
-| `NEAR_HYDRA_RPC_POLYGON` | Override Polygon RPC |
-| `NEAR_HYDRA_RPC_ARBITRUM` | Override Arbitrum RPC |
-| `NEAR_HYDRA_RPC_BASE` | Override Base RPC |
-| `NEAR_HYDRA_RPC_SOLANA` | Override Solana RPC |
-| `NEAR_HYDRA_RPC_BITCOIN_MEMPOOL` | Override Mempool API base URL |
-| `NEAR_HYDRA_ONECLICK_BASE_URL` | Override 1Click base URL |
-| `NEAR_HYDRA_ONECLICK_API_KEY` | 1Click partner API key (skips 0.2% fee) |
-
-Every RPC is overridable individually — useful when public endpoints rate-limit you or you want to point at your own infra (Alchemy, QuickNode, dRPC, etc.).
-
-## Demo: one NEAR account, six chains
+## What it does, in 30 seconds
 
 ```bash
 $ hydra account balance-all near
@@ -86,35 +26,47 @@ $ hydra account balance-all near
     { "chain": "polygon",  "address": "0x3247...0268", "balance": "0", "decimals": 18 },
     { "chain": "arbitrum", "address": "0x9e89...d42D", "balance": "0", "decimals": 18 },
     { "chain": "base",     "address": "0xe183...90d9", "balance": "0", "decimals": 18 },
-    { "chain": "bitcoin",  "address": "bc1qshk...srza", "balance": "0", "decimals": 8 },
-    { "chain": "solana",   "address": "vquhA...n4MB",  "balance": "0", "decimals": 9 }
+    { "chain": "bitcoin",  "address": "bc1qshk...srza", "balance": "0", "decimals": 8  },
+    { "chain": "solana",   "address": "vquhA...n4MB",   "balance": "0", "decimals": 9  }
   ]
 }
 ```
 
-One MPC-derived address per chain, all from the single NEAR account `near`. No bridges. No separate wallets. No seed phrases per chain.
+**Six MPC-derived addresses, six chains, one NEAR account.** No bridges. No seed phrase per chain. No separate wallets.
 
-## CLI usage
+This is **NEAR Chain Signatures** — a NEAR account or smart contract signs for any chain via an MPC network. `near-hydra` exposes this, NEAR Intents, and the rest of the stack as a **CLI** for humans and an **MCP server** for AI agents (Claude Code, Cursor, OpenAI Agents SDK, anything MCP-aware).
+
+---
+
+## Why
+
+NEAR's chain-abstraction primitives are powerful but fragmented:
+
+- **Chain Signatures** — sign any chain from one NEAR account
+- **NEAR Intents** — declare a goal, solvers fulfill it cross-chain
+- **Shade Agents** — verifiable autonomous agents in TEEs
+
+Each lives in a separate library with a different auth model. Stitching them together is annoying glue. `near-hydra` is the glue, agent-ergonomic by default.
+
+---
+
+## Quickstart
 
 ```bash
-hydra config
+git clone https://github.com/nikshepsvn/near-hydra.git
+cd near-hydra
+npm install
+npm run build
+alias hydra="node $(pwd)/packages/cli/dist/index.js"
 
-hydra account view alice.near
-hydra account balance-all alice.near    # derives addresses on every chain, gets balances
-
-hydra address derive -c ethereum -p alice.near
-hydra address derive -c bitcoin -p alice.near
-hydra address derive -c solana -p alice.near
-hydra address balance -c bitcoin -a bc1qshk...
-
-hydra contract view wrap.near ft_balance_of -a '{"account_id":"alice.near"}'
-
-hydra swap tokens
-hydra swap quote '{"originAsset":"...","destinationAsset":"...","amount":"100","recipient":"...","refundTo":"...","refundType":"ORIGIN_CHAIN","dry":true}'
-hydra swap status <depositAddress>
+hydra account balance-all near    # ← real on-chain data, no setup needed
 ```
 
-## MCP usage (Claude Code)
+Requires Node ≥ 20. Defaults to mainnet, read-only — no key needed for inspection.
+
+---
+
+## Use from Claude Code (or any MCP client)
 
 Add to `~/.claude/settings.json`:
 
@@ -123,65 +75,162 @@ Add to `~/.claude/settings.json`:
   "mcpServers": {
     "near-hydra": {
       "command": "node",
-      "args": ["/absolute/path/to/near/packages/mcp-server/dist/index.js"],
-      "env": {
-        "NEAR_HYDRA_NETWORK": "mainnet"
-      }
+      "args": ["/absolute/path/to/near-hydra/packages/mcp-server/dist/index.js"],
+      "env": { "NEAR_HYDRA_NETWORK": "mainnet" }
     }
   }
 }
 ```
 
-Then in Claude Code: `"What's the BTC address derived from near.near?"` → tool call to `hydra_address_derive`.
+Restart Claude Code, then ask:
 
-## Tools (current)
+> *What's the Bitcoin address derived from the NEAR account `near.near`?*
 
-| Tool | Purpose |
+Claude calls `hydra_address_derive` and returns a real BTC address.
+
+---
+
+## CLI cheatsheet
+
+```bash
+hydra config                                          # show active config
+
+hydra account view alice.near                         # NEAR account state
+hydra account balance-all alice.near                  # multi-chain in one call
+
+hydra address derive -c bitcoin  -p alice.near        # derive BTC address
+hydra address derive -c ethereum -p alice.near
+hydra address derive -c solana   -p alice.near
+hydra address balance -c bitcoin -a bc1qshk...
+
+hydra contract view wrap.near ft_balance_of \
+  -a '{"account_id":"alice.near"}'
+
+hydra swap tokens                                     # 1Click token catalog
+hydra swap quote '<json>'                             # get cross-chain quote
+hydra swap status <depositAddress>
+```
+
+---
+
+## Tools (current set)
+
+| Tool | What it does |
 |---|---|
-| `hydra_config_show` | Show active config |
-| `hydra_account_view` | NEAR account state (balance, storage, code hash) |
+| `hydra_config_show` | Show the active configuration |
+| `hydra_account_view` | NEAR account state — balance, storage, code hash |
 | `hydra_contract_view` | Read-only contract view call |
 | `hydra_address_derive` | Derive a foreign-chain address from a NEAR account via MPC |
 | `hydra_address_balance` | Native-asset balance on a foreign chain |
-| `hydra_account_balance_all_chains` | Multi-chain balance aggregation in one call |
+| `hydra_account_balance_all_chains` | Derive + balance across every supported chain |
 | `hydra_swap_tokens` | List 1Click-supported tokens |
 | `hydra_swap_quote` | Get a cross-chain swap quote |
 | `hydra_swap_status` | Check swap execution status |
-| `hydra_swap_submit_deposit` | Notify 1Click that the deposit tx is broadcast |
+| `hydra_swap_submit_deposit` | Notify 1Click of broadcast deposit tx |
+
+Every CLI subcommand mirrors a tool one-to-one.
+
+---
+
+## Configuration
+
+Defaults work out of the box. Override via `~/.near-hydra/config.json` or env vars.
+
+### Most useful env vars
+
+| Variable | Purpose |
+|---|---|
+| `NEAR_HYDRA_NETWORK` | `mainnet` or `testnet` |
+| `NEAR_HYDRA_ACCOUNT_ID` | Your NEAR account |
+| `NEAR_HYDRA_PRIVATE_KEY` | `ed25519:...` (only needed for signing tx) |
+| `NEAR_HYDRA_RPC_NEAR` | Override NEAR RPC |
+| `NEAR_HYDRA_RPC_ETHEREUM` | Override Ethereum RPC |
+| `NEAR_HYDRA_RPC_POLYGON` | Override Polygon RPC |
+| `NEAR_HYDRA_RPC_ARBITRUM` | Override Arbitrum RPC |
+| `NEAR_HYDRA_RPC_BASE` | Override Base RPC |
+| `NEAR_HYDRA_RPC_SOLANA` | Override Solana RPC |
+| `NEAR_HYDRA_RPC_BITCOIN_MEMPOOL` | Override Mempool API |
+| `NEAR_HYDRA_MPC_CONTRACT` | Override MPC contract (advanced) |
+| `NEAR_HYDRA_ONECLICK_API_KEY` | 1Click partner key (skips 0.2% fee) |
+| `NEAR_HYDRA_CONFIG` | Path to alternate config file |
+
+Every RPC is overridable individually. Public endpoints rate-limit you? Point at Alchemy, QuickNode, dRPC, or your own infra.
+
+### Config file example (`~/.near-hydra/config.json`)
+
+```json
+{
+  "network": "mainnet",
+  "account": {
+    "id": "alice.near",
+    "privateKey": "ed25519:..."
+  },
+  "rpc": {
+    "ethereum": "https://your-ethereum-rpc",
+    "solana":   "https://your-solana-rpc"
+  },
+  "oneClick": {
+    "apiKey": "your-1click-partner-key"
+  }
+}
+```
+
+---
+
+## Roadmap
+
+| Version | Scope |
+|---|---|
+| **v0.1** *(now)* | Read-only across 6 chains + 1Click swap discovery |
+| **v0.2** | Signing + broadcasting on every chain; full 1Click swap execution |
+| **v0.3** | Raw NEAR Intents (deposits, solver-relay); Omnibridge |
+| **v0.4** | Shade Agent deploy/whitelist/status; NEP-366 meta-transactions |
+| **v1.0** | Policy engine (function-call key allowances, allowlists); `hydra do "<natural language>"` goal verb |
+
+---
 
 ## Architecture
 
 ```
 core/        config • NEAR provider • Chain Signatures wrappers • 1Click wrappers
-mcp-server/  registers core functions as MCP tools (stdio transport)
-cli/         registers core functions as commander subcommands
+mcp-server/  exposes core functions as MCP tools (stdio transport)
+cli/         exposes core functions as commander subcommands
 ```
 
-`core` depends on:
-- `chainsig.js` for cross-chain derive/build/sign/broadcast
-- `@defuse-protocol/one-click-sdk-typescript` for cross-chain swaps
-- `@near-js/*` (v7 modular) for NEAR-native ops
-- `viem` for EVM clients, `@solana/web3.js` for Solana
+Built on the giants:
 
-## Known gaps and notes
+- [chainsig.js](https://github.com/NearDeFi/chainsig.js) — cross-chain MPC signing
+- [@defuse-protocol/one-click-sdk-typescript](https://github.com/defuse-protocol/one-click-sdk-typescript) — NEAR Intents 1Click
+- [@near-js/*](https://github.com/near/near-api-js) — NEAR-native ops (v7 modular)
+- [viem](https://viem.sh/) — EVM client
+- [@solana/web3.js](https://github.com/solana-labs/solana-web3.js) — Solana client
+- [@modelcontextprotocol/sdk](https://github.com/modelcontextprotocol/typescript-sdk) — MCP server
 
-- **Signing/sending tx on foreign chains** is not yet exposed (the surface is built; the tools aren't wired). Coming next.
-- **NEAR Intents (raw)** — only the high-level 1Click flow is wired. Raw intents (deposits, custom intents, solver-relay) are next.
-- **Omnibridge** integration not yet added.
-- **Shade Agents** lifecycle (`shade-agent-cli` wrapper) not yet added.
-- **Solana derivation** has a workaround for a chainsig.js v1.1.14 bug — we call the MPC contract directly to get the raw `ed25519:...` key (which IS the Solana address). Tracking upstream fix.
-- **MPC contract default** is `v1.signer` on mainnet (NEAR's deployed contract). chainsig.js's bundled default was stale.
-- **Polygon public RPC** (`polygon-rpc.com`) requires API keys; we default to PublicNode. Configurable.
-- **postinstall** patches a known chainsig.js ESM packaging bug (extensionless `cosmjs-types` imports). Idempotent.
+`near-hydra` doesn't reinvent any protocol — it composes existing libraries behind one config, one auth model, one tool surface.
 
-## Roadmap
+---
 
-- **V0.1** (current): read-only across all chains, 1Click swap discovery
-- **V0.2**: signing + broadcasting on every chain (BTC/EVM/Solana sends), full 1Click swap execution
-- **V0.3**: raw NEAR Intents (deposits, withdrawals, solver-relay), Omnibridge
-- **V0.4**: Shade Agent deploy/whitelist/status, meta-transactions (NEP-366)
-- **V1.0**: policy engine (function-call key allowances, max-tx-value, allowlists), `hydra do "<natural-language>"` goal verb
+## Known notes
+
+- Mainnet MPC contract pinned to **`v1.signer`**. chainsig.js's bundled default (`v1.sig-net.near`) appears stale; we use the deployed NEAR contract.
+- Solana derivation includes a small workaround for a chainsig.js v1.1.14 bug (Ed25519 keys collapsed to SEC1 hex). We derive directly from the MPC contract for Solana.
+- `npm install` runs an idempotent postinstall patch for a known chainsig.js ESM packaging issue (extensionless `cosmjs-types` imports).
+- Not yet on npm — clone + build for now. Will publish once v0.2 lands.
+
+---
+
+## Why "hydra"?
+
+Many heads, one body. Each chain is a head. The NEAR account is the body. The agent has many faces but one identity. Cut off a chain — derive again. The agent endures.
+
+---
+
+## Contributing
+
+Open to PRs and issues. The roadmap above is the priority list. If you want to take on `v0.2` (signing/sending), file an issue first to coordinate.
+
+---
 
 ## License
 
-Apache-2.0
+[Apache-2.0](LICENSE)

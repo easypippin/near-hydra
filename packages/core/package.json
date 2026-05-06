@@ -1,6 +1,7 @@
 {
   "name": "@near-hydra/core",
-  "version": "0.0.1",
+  "version": "0.1.0",
+  "description": "Core library for near-hydra: NEAR client, Chain Signatures wrappers, NEAR Intents 1Click client.",
   "type": "module",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -11,6 +12,17 @@
   "scripts": {
     "build": "tsc -p ."
   },
+  "homepage": "https://github.com/nikshepsvn/near-hydra#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nikshepsvn/near-hydra.git",
+    "directory": "packages/core"
+  },
+  "bugs": {
+    "url": "https://github.com/nikshepsvn/near-hydra/issues"
+  },
+  "keywords": ["near", "chain-signatures", "near-intents", "mpc", "multichain"],
+  "license": "Apache-2.0",
   "dependencies": {
     "@defuse-protocol/one-click-sdk-typescript": "^0.1.17",
     "@near-js/accounts": "^2.2.4",

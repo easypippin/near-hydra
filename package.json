@@ -1,8 +1,8 @@
 {
   "name": "near-hydra-monorepo",
   "private": true,
-  "version": "0.0.1",
-  "description": "Unofficial all-in-one CLI + MCP server for the full NEAR stack (accounts, Chain Signatures, NEAR Intents).",
+  "version": "0.1.0",
+  "description": "Unofficial all-in-one CLI + MCP server for the NEAR stack — one NEAR account, every chain (Bitcoin, Ethereum, Polygon, Arbitrum, Base, Solana) via Chain Signatures + NEAR Intents.",
   "type": "module",
   "workspaces": [
     "packages/*"
@@ -17,6 +17,29 @@
   "engines": {
     "node": ">=20"
   },
+  "homepage": "https://github.com/nikshepsvn/near-hydra#readme",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/nikshepsvn/near-hydra.git"
+  },
+  "bugs": {
+    "url": "https://github.com/nikshepsvn/near-hydra/issues"
+  },
+  "keywords": [
+    "near",
+    "near-protocol",
+    "mcp",
+    "mcp-server",
+    "chain-signatures",
+    "near-intents",
+    "chain-abstraction",
+    "ai-agents",
+    "claude",
+    "cli",
+    "multichain",
+    "cross-chain",
+    "blockchain"
+  ],
   "license": "Apache-2.0",
   "devDependencies": {
     "@types/node": "^22.10.0",
