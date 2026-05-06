@@ -15,6 +15,10 @@ Built for AI agents and humans.
 ![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)
 ![Chains](https://img.shields.io/badge/chains-10-orange)
 
+<br>
+
+![near-hydra demo: ten chains, ten addresses, one NEAR account](https://raw.githubusercontent.com/nikshepsvn/near-hydra/main/demo.gif)
+
 </div>
 
 ---
