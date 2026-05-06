@@ -5,6 +5,7 @@
 **One NEAR account. Every chain. Every agent.**
 
 Unified CLI + MCP server for the NEAR stack — accounts, Chain Signatures, NEAR Intents — built for AI agents and humans.
+Supports **Bitcoin, Ethereum, Polygon, Arbitrum, Base, Optimism, BNB Chain, Avalanche, Aurora, Solana** out of the box.
 
 [![CI](https://github.com/nikshepsvn/near-hydra/actions/workflows/ci.yml/badge.svg)](https://github.com/nikshepsvn/near-hydra/actions/workflows/ci.yml)
 [![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
@@ -22,17 +23,21 @@ $ hydra account balance-all near
 {
   "accountId": "near",
   "derived": [
-    { "chain": "ethereum", "address": "0xb190...0954", "balance": "0", "decimals": 18 },
-    { "chain": "polygon",  "address": "0x3247...0268", "balance": "0", "decimals": 18 },
-    { "chain": "arbitrum", "address": "0x9e89...d42D", "balance": "0", "decimals": 18 },
-    { "chain": "base",     "address": "0xe183...90d9", "balance": "0", "decimals": 18 },
-    { "chain": "bitcoin",  "address": "bc1qshk...srza", "balance": "0", "decimals": 8  },
-    { "chain": "solana",   "address": "vquhA...n4MB",   "balance": "0", "decimals": 9  }
+    { "chain": "ethereum",  "address": "0xb190...0954", "balance": "0", "decimals": 18 },
+    { "chain": "polygon",   "address": "0x3247...0268", "balance": "0", "decimals": 18 },
+    { "chain": "arbitrum",  "address": "0x9e89...d42D", "balance": "0", "decimals": 18 },
+    { "chain": "base",      "address": "0xe183...90d9", "balance": "0", "decimals": 18 },
+    { "chain": "optimism",  "address": "0x083d...9C64", "balance": "0", "decimals": 18 },
+    { "chain": "bnb",       "address": "0x1E07...2305", "balance": "0", "decimals": 18 },
+    { "chain": "avalanche", "address": "0x0ddf...f248", "balance": "0", "decimals": 18 },
+    { "chain": "aurora",    "address": "0x9A2d...50DB", "balance": "0", "decimals": 18 },
+    { "chain": "bitcoin",   "address": "bc1qshk...srza", "balance": "0", "decimals": 8  },
+    { "chain": "solana",    "address": "vquhA...n4MB",   "balance": "0", "decimals": 9  }
   ]
 }
 ```
 
-**Six MPC-derived addresses, six chains, one NEAR account.** No bridges. No seed phrase per chain. No separate wallets.
+**Ten MPC-derived addresses, ten chains, one NEAR account.** No bridges. No seed phrase per chain. No separate wallets.
 
 This is **NEAR Chain Signatures** — a NEAR account or smart contract signs for any chain via an MPC network. `near-hydra` exposes this, NEAR Intents, and the rest of the stack as a **CLI** for humans and an **MCP server** for AI agents (Claude Code, Cursor, OpenAI Agents SDK, anything MCP-aware).
 
@@ -148,6 +153,10 @@ Defaults work out of the box. Override via `~/.near-hydra/config.json` or env va
 | `NEAR_HYDRA_RPC_POLYGON` | Override Polygon RPC |
 | `NEAR_HYDRA_RPC_ARBITRUM` | Override Arbitrum RPC |
 | `NEAR_HYDRA_RPC_BASE` | Override Base RPC |
+| `NEAR_HYDRA_RPC_OPTIMISM` | Override Optimism RPC |
+| `NEAR_HYDRA_RPC_BNB` | Override BNB Chain RPC |
+| `NEAR_HYDRA_RPC_AVALANCHE` | Override Avalanche C-chain RPC |
+| `NEAR_HYDRA_RPC_AURORA` | Override Aurora RPC |
 | `NEAR_HYDRA_RPC_SOLANA` | Override Solana RPC |
 | `NEAR_HYDRA_RPC_BITCOIN_MEMPOOL` | Override Mempool API |
 | `NEAR_HYDRA_MPC_CONTRACT` | Override MPC contract (advanced) |
@@ -209,6 +218,16 @@ Built on the giants:
 `near-hydra` doesn't reinvent any protocol — it composes existing libraries behind one config, one auth model, one tool surface.
 
 ---
+
+## Security
+
+`near-hydra` is read-only by default. To use signing operations (coming in v0.2):
+
+- **Private keys are stored unencrypted** in `~/.near-hydra/config.json` or env vars. Treat them like SSH keys: lock down file permissions, never commit them, never paste them into AI agent contexts you don't fully control.
+- **Use function-call access keys**, not full-access keys, when handing credentials to an agent. NEAR's permission model lets you create keys scoped to specific contracts/methods with capped allowances. A prompt-injection that says "drain my wallet" should fail because the key can't transfer.
+- **Read-only mode is safe** to run against mainnet without a key. The default config has no key.
+
+A v1.0 policy engine (max-tx-value, allowlists, confirmation thresholds) is on the roadmap.
 
 ## Known notes
 

@@ -4,21 +4,27 @@ import { join } from "node:path";
 
 export type Network = "mainnet" | "testnet";
 
+export interface RpcEndpoints {
+  near: string;
+  ethereum: string;
+  polygon: string;
+  arbitrum: string;
+  base: string;
+  optimism: string;
+  bnb: string;
+  avalanche: string;
+  aurora: string;
+  solana: string;
+  bitcoinMempool: string;
+}
+
 export interface HydraConfig {
   network: Network;
   account?: {
     id: string;
     privateKey?: string;
   };
-  rpc: {
-    near: string;
-    ethereum: string;
-    polygon: string;
-    arbitrum: string;
-    base: string;
-    solana: string;
-    bitcoinMempool: string;
-  };
+  rpc: RpcEndpoints;
   mpcContract: string;
   oneClick: {
     baseUrl: string;
@@ -35,6 +41,10 @@ const DEFAULTS: Record<Network, HydraConfig> = {
       polygon: "https://polygon-bor-rpc.publicnode.com",
       arbitrum: "https://arb1.arbitrum.io/rpc",
       base: "https://mainnet.base.org",
+      optimism: "https://mainnet.optimism.io",
+      bnb: "https://bsc-rpc.publicnode.com",
+      avalanche: "https://avalanche-c-chain-rpc.publicnode.com",
+      aurora: "https://mainnet.aurora.dev",
       solana: "https://api.mainnet-beta.solana.com",
       bitcoinMempool: "https://mempool.space/api",
     },
@@ -49,6 +59,10 @@ const DEFAULTS: Record<Network, HydraConfig> = {
       polygon: "https://rpc-amoy.polygon.technology",
       arbitrum: "https://sepolia-rollup.arbitrum.io/rpc",
       base: "https://sepolia.base.org",
+      optimism: "https://sepolia.optimism.io",
+      bnb: "https://bsc-testnet-rpc.publicnode.com",
+      avalanche: "https://avalanche-fuji-c-chain-rpc.publicnode.com",
+      aurora: "https://testnet.aurora.dev",
       solana: "https://api.devnet.solana.com",
       bitcoinMempool: "https://mempool.space/testnet/api",
     },
@@ -75,6 +89,20 @@ function deepMerge<T>(base: T, override: Partial<T>): T {
   return out as T;
 }
 
+const RPC_ENV_KEYS: Array<[keyof RpcEndpoints, string]> = [
+  ["near", "NEAR_HYDRA_RPC_NEAR"],
+  ["ethereum", "NEAR_HYDRA_RPC_ETHEREUM"],
+  ["polygon", "NEAR_HYDRA_RPC_POLYGON"],
+  ["arbitrum", "NEAR_HYDRA_RPC_ARBITRUM"],
+  ["base", "NEAR_HYDRA_RPC_BASE"],
+  ["optimism", "NEAR_HYDRA_RPC_OPTIMISM"],
+  ["bnb", "NEAR_HYDRA_RPC_BNB"],
+  ["avalanche", "NEAR_HYDRA_RPC_AVALANCHE"],
+  ["aurora", "NEAR_HYDRA_RPC_AURORA"],
+  ["solana", "NEAR_HYDRA_RPC_SOLANA"],
+  ["bitcoinMempool", "NEAR_HYDRA_RPC_BITCOIN_MEMPOOL"],
+];
+
 export function loadConfig(): HydraConfig {
   const path = configPath();
   const file = existsSync(path)
@@ -100,17 +128,8 @@ export function loadConfig(): HydraConfig {
   const envMpc = process.env.NEAR_HYDRA_MPC_CONTRACT;
   if (envMpc) cfg = { ...cfg, mpcContract: envMpc };
 
-  const rpcOverrides: Partial<HydraConfig["rpc"]> = {};
-  const rpcEnvKeys: Array<[keyof HydraConfig["rpc"], string]> = [
-    ["near", "NEAR_HYDRA_RPC_NEAR"],
-    ["ethereum", "NEAR_HYDRA_RPC_ETHEREUM"],
-    ["polygon", "NEAR_HYDRA_RPC_POLYGON"],
-    ["arbitrum", "NEAR_HYDRA_RPC_ARBITRUM"],
-    ["base", "NEAR_HYDRA_RPC_BASE"],
-    ["solana", "NEAR_HYDRA_RPC_SOLANA"],
-    ["bitcoinMempool", "NEAR_HYDRA_RPC_BITCOIN_MEMPOOL"],
-  ];
-  for (const [k, env] of rpcEnvKeys) {
+  const rpcOverrides: Partial<RpcEndpoints> = {};
+  for (const [k, env] of RPC_ENV_KEYS) {
     const v = process.env[env];
     if (v) rpcOverrides[k] = v;
   }

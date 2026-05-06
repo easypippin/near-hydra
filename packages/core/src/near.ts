@@ -2,6 +2,7 @@ import { Account } from "@near-js/accounts";
 import { JsonRpcProvider } from "@near-js/providers";
 import { KeyPair } from "@near-js/crypto";
 import { KeyPairSigner, type Signer } from "@near-js/signers";
+import { formatNearAmount } from "@near-js/utils";
 import type { HydraConfig } from "./config.js";
 
 export function nearProvider(cfg: HydraConfig): JsonRpcProvider {
@@ -31,8 +32,8 @@ export async function viewAccount(cfg: HydraConfig, accountId: string) {
       available: state.balance.available.toString(),
       usedOnStorage: state.balance.usedOnStorage.toString(),
       locked: state.balance.locked.toString(),
-      totalNear: yoctoToNear(state.balance.total),
-      availableNear: yoctoToNear(state.balance.available),
+      totalNear: formatNearAmount(state.balance.total.toString()),
+      availableNear: formatNearAmount(state.balance.available.toString()),
     },
     storageUsage: state.storageUsage,
     codeHash: state.codeHash,
@@ -45,13 +46,5 @@ export async function viewFunction(
   method: string,
   args: Record<string, unknown> = {},
 ): Promise<unknown> {
-  const provider = nearProvider(cfg);
-  return provider.callFunction(contractId, method, args);
-}
-
-function yoctoToNear(yocto: bigint | string): string {
-  const s = (typeof yocto === "bigint" ? yocto.toString() : yocto).padStart(25, "0");
-  const whole = s.slice(0, -24).replace(/^0+/, "") || "0";
-  const frac = s.slice(-24).replace(/0+$/, "");
-  return frac ? `${whole}.${frac}` : whole;
+  return nearProvider(cfg).callFunction(contractId, method, args);
 }

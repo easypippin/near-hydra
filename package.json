@@ -12,6 +12,7 @@
     "clean": "rm -rf packages/*/dist packages/*/tsconfig.tsbuildinfo",
     "mcp": "node packages/mcp-server/dist/index.js",
     "hydra": "node packages/cli/dist/index.js",
+    "test": "node scripts/smoke-tools.mjs",
     "postinstall": "node scripts/postinstall.mjs"
   },
   "engines": {

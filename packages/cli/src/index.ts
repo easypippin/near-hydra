@@ -150,16 +150,57 @@ swap
   });
 
 swap
-  .command("quote <requestJson>")
-  .description("Get a 1Click swap quote (pass JSON request body)")
-  .action(async (requestJson: string) => {
-    try {
-      const request = JSON.parse(requestJson) as QuoteRequest;
-      out(await getSwapQuote(loadConfig(), request));
-    } catch (e) {
-      fail(e);
-    }
-  });
+  .command("quote")
+  .description("Get a 1Click cross-chain swap quote")
+  .requiredOption("--from <assetId>", "originAsset (e.g. nep141:wrap.near)")
+  .requiredOption("--to <assetId>", "destinationAsset")
+  .requiredOption("--amount <baseUnits>", "amount in origin's smallest units")
+  .requiredOption("--recipient <addr>", "recipient address")
+  .requiredOption("--refund-to <addr>", "where to refund on failure")
+  .option("--swap-type <t>", "EXACT_INPUT | EXACT_OUTPUT | FLEX_INPUT | ANY_INPUT", "EXACT_INPUT")
+  .option("--deposit-type <t>", "ORIGIN_CHAIN | INTENTS", "ORIGIN_CHAIN")
+  .option("--refund-type <t>", "ORIGIN_CHAIN | INTENTS", "ORIGIN_CHAIN")
+  .option("--recipient-type <t>", "DESTINATION_CHAIN | INTENTS", "DESTINATION_CHAIN")
+  .option("--slippage-bps <n>", "slippage tolerance, basis points (100 = 1%)", "100")
+  .option("--dry <bool>", "dry run", "true")
+  .option("--extra <json>", "additional fields merged into the request", "{}")
+  .action(
+    async (opts: {
+      from: string;
+      to: string;
+      amount: string;
+      recipient: string;
+      refundTo: string;
+      swapType: string;
+      depositType: string;
+      refundType: string;
+      recipientType: string;
+      slippageBps: string;
+      dry: string;
+      extra: string;
+    }) => {
+      try {
+        const extra = JSON.parse(opts.extra);
+        const request = {
+          originAsset: opts.from,
+          destinationAsset: opts.to,
+          amount: opts.amount,
+          recipient: opts.recipient,
+          refundTo: opts.refundTo,
+          swapType: opts.swapType,
+          depositType: opts.depositType,
+          refundType: opts.refundType,
+          recipientType: opts.recipientType,
+          slippageTolerance: Number(opts.slippageBps),
+          dry: opts.dry !== "false",
+          ...extra,
+        } as unknown as QuoteRequest;
+        out(await getSwapQuote(loadConfig(), request));
+      } catch (e) {
+        fail(e);
+      }
+    },
+  );
 
 swap
   .command("status <depositAddress>")
