@@ -9,9 +9,10 @@ Signs transactions across **10 chains** from a single account.
 Built for AI agents and humans.
 
 [![CI](https://github.com/nikshepsvn/near-hydra/actions/workflows/ci.yml/badge.svg)](https://github.com/nikshepsvn/near-hydra/actions/workflows/ci.yml)
+[![npm](https://img.shields.io/npm/v/near-hydra.svg?label=near-hydra)](https://www.npmjs.com/package/near-hydra)
+[![npm](https://img.shields.io/npm/v/near-hydra-mcp.svg?label=near-hydra-mcp&color=purple)](https://www.npmjs.com/package/near-hydra-mcp)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 ![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)
-![MCP](https://img.shields.io/badge/MCP-1.29-purple)
 ![Chains](https://img.shields.io/badge/chains-10-orange)
 
 </div>
@@ -60,28 +61,53 @@ CLI for humans. MCP server for Claude Code, Cursor, OpenAI Agents SDK, anything 
 
 ## Quickstart
 
+### From npm (recommended)
+
+```bash
+npm install -g near-hydra            # CLI: `near-hydra ...`
+npx -y near-hydra account balance-all near    # ← real on-chain data, no setup
+```
+
+Or for the MCP server:
+
+```bash
+npm install -g near-hydra-mcp        # exposes `near-hydra-mcp` binary
+```
+
+### From source
+
 ```bash
 git clone https://github.com/nikshepsvn/near-hydra.git
-cd near-hydra
-npm install
-npm run build
+cd near-hydra && npm install && npm run build
 alias hydra="node $(pwd)/packages/cli/dist/index.js"
-
-hydra account balance-all near    # real on-chain data, no setup needed
+hydra account balance-all near
 ```
 
 Requires Node ≥ 20. Defaults to mainnet, read-only.
 
 ### Use from Claude Code (or any MCP client)
 
-Add to `~/.claude/settings.json`:
+After `npm install -g near-hydra-mcp`, add to `~/.claude/settings.json`:
 
 ```json
 {
   "mcpServers": {
     "near-hydra": {
-      "command": "node",
-      "args": ["/absolute/path/to/near-hydra/packages/mcp-server/dist/index.js"],
+      "command": "near-hydra-mcp",
+      "env": { "NEAR_HYDRA_NETWORK": "mainnet" }
+    }
+  }
+}
+```
+
+Or with `npx` (no global install):
+
+```json
+{
+  "mcpServers": {
+    "near-hydra": {
+      "command": "npx",
+      "args": ["-y", "near-hydra-mcp"],
       "env": { "NEAR_HYDRA_NETWORK": "mainnet" }
     }
   }
