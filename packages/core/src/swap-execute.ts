@@ -66,8 +66,22 @@ function inferOriginRoute(originAsset: string): OriginRoute {
   const prefix = dash < 0 ? head : head.slice(0, dash);
   const chain = OMFT_PREFIX_TO_CHAIN[prefix];
   if (!chain) return { kind: "near-ft", ftContract: tail };
-  if (chain === "bitcoin") return { kind: "btc-native" };
-  if (chain === "solana") return { kind: "solana-native" }; // SPL tokens on Solana not yet routed
+  if (chain === "bitcoin") {
+    if (dash >= 0) {
+      throw new Error(
+        `Token bridges on Bitcoin (e.g. ${originAsset}) are not yet routable. Use a bridged BTC asset like nep141:btc.omft.near or wait for SPL/BRC routing.`,
+      );
+    }
+    return { kind: "btc-native" };
+  }
+  if (chain === "solana") {
+    if (dash >= 0) {
+      throw new Error(
+        `Solana SPL tokens (e.g. ${originAsset}) are not yet routable. Native SOL works via nep141:sol.omft.near.`,
+      );
+    }
+    return { kind: "solana-native" };
+  }
   if (EVM_CHAINS.has(chain)) {
     if (dash < 0) return { kind: "evm-native", chain: chain as EvmChain };
     return { kind: "evm-erc20", chain: chain as EvmChain, token: head.slice(dash + 1) };

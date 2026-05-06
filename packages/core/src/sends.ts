@@ -1,6 +1,5 @@
 import { encodeFunctionData, isAddress, type Hex } from "viem";
-import { adapterFor as _adapterFor } from "./chains-internal.js";
-import { mpcContract as _mpcContract } from "./chains-internal.js";
+import { adapterFor, mpcContract, deriveAddress, DEFAULT_PATHS, type EvmChain } from "./chains.js";
 import { nearAccount } from "./near.js";
 import {
   ensureSigningAllowed,
@@ -9,7 +8,6 @@ import {
   checkWeiAmount,
 } from "./policy.js";
 import type { HydraConfig } from "./config.js";
-import type { EvmChain } from "./chains.js";
 
 const FT_TRANSFER_GAS = 30_000_000_000_000n;
 const DEFAULT_CALL_GAS = 30_000_000_000_000n;
@@ -131,8 +129,8 @@ export async function sendEvm(cfg: HydraConfig, args: SendEvmArgs) {
   ensureSigningAllowed(cfg);
   ensureNearSigner(cfg);
   const predecessor = args.predecessor ?? cfg.account!.id;
-  const path = args.path ?? `${args.chain}-1`;
-  const adapter = _adapterFor(cfg, args.chain);
+  const path = args.path ?? DEFAULT_PATHS[args.chain];
+  const adapter = adapterFor(cfg, args.chain);
   const { address: from } = await adapter.deriveAddressAndPublicKey(predecessor, path);
 
   let to: string;
@@ -182,7 +180,7 @@ export async function sendEvm(cfg: HydraConfig, args: SendEvmArgs) {
   });
 
   const signerAccount = nearAccount(cfg);
-  const contract = _mpcContract(cfg);
+  const contract = mpcContract(cfg);
   const rsvSignatures = await contract.sign({
     payloads: hashesToSign,
     path,
@@ -211,8 +209,8 @@ export async function sendBtc(cfg: HydraConfig, args: SendBtcArgs) {
   ensureSigningAllowed(cfg);
   ensureNearSigner(cfg);
   const predecessor = args.predecessor ?? cfg.account!.id;
-  const path = args.path ?? "bitcoin-1";
-  const adapter = _adapterFor(cfg, "bitcoin");
+  const path = args.path ?? DEFAULT_PATHS.bitcoin;
+  const adapter = adapterFor(cfg, "bitcoin");
   const { address: from, publicKey } = await adapter.deriveAddressAndPublicKey(predecessor, path);
 
   const plan = {
@@ -232,7 +230,7 @@ export async function sendBtc(cfg: HydraConfig, args: SendBtcArgs) {
   });
 
   const signerAccount = nearAccount(cfg);
-  const contract = _mpcContract(cfg);
+  const contract = mpcContract(cfg);
   const rsvSignatures = await contract.sign({
     payloads: hashesToSign,
     path,
@@ -259,10 +257,10 @@ export async function sendSolana(cfg: HydraConfig, args: SendSolanaArgs) {
   ensureSigningAllowed(cfg);
   ensureNearSigner(cfg);
   const predecessor = args.predecessor ?? cfg.account!.id;
-  const path = args.path ?? "solana-1";
+  const path = args.path ?? DEFAULT_PATHS.solana;
 
-  // Use the derive workaround (chainsig.js Solana adapter's derive is broken in v1.1.14).
-  const { deriveAddress } = await import("./chains.js");
+  // Use deriveAddress's Solana workaround (chainsig.js v1.1.14 collapses Ed25519
+  // keys to SEC1 hex in its adapter, so we go straight to the MPC contract).
   const { address: from } = await deriveAddress(cfg, "solana", predecessor, path);
 
   const plan = {
@@ -274,7 +272,7 @@ export async function sendSolana(cfg: HydraConfig, args: SendSolanaArgs) {
   };
   if (args.dry !== false) return { dry: true, plan };
 
-  const adapter = _adapterFor(cfg, "solana");
+  const adapter = adapterFor(cfg, "solana");
   const { transaction, hashesToSign } = await adapter.prepareTransactionForSigning({
     from,
     to: args.to,
@@ -282,7 +280,7 @@ export async function sendSolana(cfg: HydraConfig, args: SendSolanaArgs) {
   });
 
   const signerAccount = nearAccount(cfg);
-  const contract = _mpcContract(cfg);
+  const contract = mpcContract(cfg);
   const sigs = await contract.sign({
     payloads: hashesToSign,
     path,

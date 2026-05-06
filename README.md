@@ -1,57 +1,60 @@
 <div align="center">
 
-# near-hydra
+# 🐍 near-hydra
 
-**One NEAR account. Every chain. Every agent.**
+### **One NEAR account. Every chain. Every agent.**
 
-Unified CLI + MCP server for the NEAR stack — accounts, Chain Signatures, NEAR Intents — built for AI agents and humans.
-Supports **Bitcoin, Ethereum, Polygon, Arbitrum, Base, Optimism, BNB Chain, Avalanche, Aurora, Solana** out of the box.
+The unified CLI + MCP server for NEAR's chain-abstraction stack.
+Signs transactions across **10 chains** from a single account.
+Built for AI agents and humans.
 
 [![CI](https://github.com/nikshepsvn/near-hydra/actions/workflows/ci.yml/badge.svg)](https://github.com/nikshepsvn/near-hydra/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
 ![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)
-![Status](https://img.shields.io/badge/status-alpha-orange)
+![MCP](https://img.shields.io/badge/MCP-1.29-purple)
+![Chains](https://img.shields.io/badge/chains-10-orange)
 
 </div>
 
 ---
 
-## What it does, in 30 seconds
+## What you can do, in two lines
 
 ```bash
 $ hydra account balance-all near
-{
-  "accountId": "near",
-  "derived": [
-    { "chain": "ethereum",  "address": "0xb190...0954", "balance": "0", "decimals": 18 },
-    { "chain": "polygon",   "address": "0x3247...0268", "balance": "0", "decimals": 18 },
-    { "chain": "arbitrum",  "address": "0x9e89...d42D", "balance": "0", "decimals": 18 },
-    { "chain": "base",      "address": "0xe183...90d9", "balance": "0", "decimals": 18 },
-    { "chain": "optimism",  "address": "0x083d...9C64", "balance": "0", "decimals": 18 },
-    { "chain": "bnb",       "address": "0x1E07...2305", "balance": "0", "decimals": 18 },
-    { "chain": "avalanche", "address": "0x0ddf...f248", "balance": "0", "decimals": 18 },
-    { "chain": "aurora",    "address": "0x9A2d...50DB", "balance": "0", "decimals": 18 },
-    { "chain": "bitcoin",   "address": "bc1qshk...srza", "balance": "0", "decimals": 8  },
-    { "chain": "solana",    "address": "vquhA...n4MB",   "balance": "0", "decimals": 9  }
-  ]
-}
+# → ten chains, ten addresses, ten balances. From one NEAR account.
+
+$ hydra swap execute --from nep141:eth-0xdac17...omft.near \
+    --to nep141:sol.omft.near --amount 1000000 \
+    --recipient <your-solana-addr> --broadcast
+# → USDT on Ethereum becomes SOL on Solana. One MCP call. No bridge UI.
 ```
 
-**Ten MPC-derived addresses, ten chains, one NEAR account.** No bridges. No seed phrase per chain. No separate wallets.
+`near-hydra` makes NEAR's primitives feel like a single product:
 
-This is **NEAR Chain Signatures** — a NEAR account or smart contract signs for any chain via an MPC network. `near-hydra` exposes this, NEAR Intents, and the rest of the stack as a **CLI** for humans and an **MCP server** for AI agents (Claude Code, Cursor, OpenAI Agents SDK, anything MCP-aware).
+- **Chain Signatures** — one NEAR account derives + signs on Bitcoin, Ethereum, Polygon, Arbitrum, Base, Optimism, BNB Chain, Avalanche, Aurora, Solana
+- **NEAR Intents** — high-level cross-chain swaps via the 1Click API, auto-routed by origin asset
+- **NEAR-native** — accounts, contracts, FTs, view + write
+
+CLI for humans. MCP server for Claude Code, Cursor, OpenAI Agents SDK, anything that speaks Model Context Protocol.
 
 ---
 
-## Why
+## Chain support matrix
 
-NEAR's chain-abstraction primitives are powerful but fragmented:
-
-- **Chain Signatures** — sign any chain from one NEAR account
-- **NEAR Intents** — declare a goal, solvers fulfill it cross-chain
-- **Shade Agents** — verifiable autonomous agents in TEEs
-
-Each lives in a separate library with a different auth model. Stitching them together is annoying glue. `near-hydra` is the glue, agent-ergonomic by default.
+| Chain | View | Derive | Native send | Token send | As swap origin | As swap dest |
+|---|:---:|:---:|:---:|:---:|:---:|:---:|
+| **NEAR**       | ✅ | n/a | ✅ | ✅ NEP-141 | ✅ | ✅ |
+| **Bitcoin**    | ✅ | ✅ | ✅ | n/a | ✅ | ✅ |
+| **Ethereum**   | ✅ | ✅ | ✅ | ✅ ERC-20 | ✅ | ✅ |
+| **Polygon**    | ✅ | ✅ | ✅ | ✅ ERC-20 | ✅ | ✅ |
+| **Arbitrum**   | ✅ | ✅ | ✅ | ✅ ERC-20 | ✅ | ✅ |
+| **Base**       | ✅ | ✅ | ✅ | ✅ ERC-20 | ✅ | ✅ |
+| **Optimism**   | ✅ | ✅ | ✅ | ✅ ERC-20 | ✅ | ✅ |
+| **BNB Chain**  | ✅ | ✅ | ✅ | ✅ ERC-20 | ✅ | ✅ |
+| **Avalanche**  | ✅ | ✅ | ✅ | ✅ ERC-20 | ✅ | ✅ |
+| **Aurora**     | ✅ | ✅ | ✅ | ✅ ERC-20 | ✅ | ✅ |
+| **Solana**     | ✅ | ✅ | ✅ | 🟡 SPL TBD | 🟡 native only | ✅ |
 
 ---
 
@@ -64,14 +67,12 @@ npm install
 npm run build
 alias hydra="node $(pwd)/packages/cli/dist/index.js"
 
-hydra account balance-all near    # ← real on-chain data, no setup needed
+hydra account balance-all near    # real on-chain data, no setup needed
 ```
 
-Requires Node ≥ 20. Defaults to mainnet, read-only — no key needed for inspection.
+Requires Node ≥ 20. Defaults to mainnet, read-only.
 
----
-
-## Use from Claude Code (or any MCP client)
+### Use from Claude Code (or any MCP client)
 
 Add to `~/.claude/settings.json`:
 
@@ -87,54 +88,50 @@ Add to `~/.claude/settings.json`:
 }
 ```
 
-Restart Claude Code, then ask:
+Restart Claude Code. Try:
 
-> *What's the Bitcoin address derived from the NEAR account `near.near`?*
+> *What's the Bitcoin address derived from `near.near`?*
 
 Claude calls `hydra_address_derive` and returns a real BTC address.
 
 ---
 
-## CLI cheatsheet
+## Your first cross-chain swap, step-by-step
+
+Goal: swap **1 wNEAR for SOL on Solana**, delivered to your derived Solana address.
 
 ```bash
-# Read-only — works without any setup
-hydra config
-hydra account view alice.near
-hydra account balance-all alice.near                  # multi-chain in one call
-hydra address derive -c bitcoin  -p alice.near
-hydra address derive -c ethereum -p alice.near
-hydra address derive -c solana   -p alice.near
-hydra address balance -c bitcoin -a bc1qshk...
-hydra contract view wrap.near ft_balance_of -a '{"account_id":"alice.near"}'
-hydra swap tokens
+# 1. Set up signing
+export NEAR_HYDRA_READ_ONLY=false
+export NEAR_HYDRA_ACCOUNT_ID=alice.near
+export NEAR_HYDRA_PRIVATE_KEY="ed25519:..."
 
-# Signing — requires NEAR_HYDRA_READ_ONLY=false + account credentials.
-# Every command defaults to a dry run; pass --broadcast to actually send.
-hydra send near alice.near 1000000000000000000000000             # 1 NEAR — dry
-hydra send near alice.near 1000000000000000000000000 --broadcast # actually send
-hydra send ft wrap.near alice.near 1000000000000000000000000
-hydra call my-contract.near my_method -a '{"x":1}' --deposit-yocto 1
-hydra send evm -c base --to 0x... --value-wei 1000000000000000
-hydra send evm -c polygon --to ignored \
-  --erc20-token 0x3c49... --erc20-recipient 0xABCD... --erc20-amount 1000000
-hydra send btc bc1q... 50000                                     # 50000 satoshi (0.0005 BTC)
-hydra send sol vquhA... 1000000                                  # 1000000 lamports (0.001 SOL)
+# 2. Find your Solana address
+hydra address derive -c solana -p alice.near
+# → "address": "vquhA...n4MB"
 
-# Cross-chain swap, auto-routes by origin chain
-hydra swap execute --from nep141:wrap.near \
-  --to nep141:sol.omft.near --amount 1000000000000000000000000 --recipient <sol-addr>
-hydra swap execute --from nep141:eth-0xdac17...omft.near \
-  --to nep141:sol.omft.near --amount 1000000 --recipient <sol-addr>     # USDT-on-Eth → SOL
-hydra swap execute --from nep141:btc.omft.near \
-  --to nep141:wrap.near --amount 100000 --recipient alice.near          # BTC → wNEAR
+# 3. Dry-run the swap (verify the plan, no funds moved)
+hydra swap execute \
+  --from nep141:wrap.near --to nep141:sol.omft.near \
+  --amount 1000000000000000000000000 --recipient vquhA...n4MB
+
+# 4. Execute (this moves real money)
+hydra swap execute \
+  --from nep141:wrap.near --to nep141:sol.omft.near \
+  --amount 1000000000000000000000000 --recipient vquhA...n4MB \
+  --broadcast
+
+# 5. Watch settlement
+hydra swap status <depositAddress-from-step-4>
 ```
+
+The same flow works EVM-origin: pass `nep141:eth-0x...omft.near` as `--from` and hydra auto-routes to a Chain-Signature-signed ERC-20 transfer on Ethereum.
 
 ---
 
-## Tools (current set)
+## Tools (17 total)
 
-### Read-only (safe by default)
+### Read-only — safe by default
 
 | Tool | What it does |
 |---|---|
@@ -149,21 +146,45 @@ hydra swap execute --from nep141:btc.omft.near \
 | `hydra_swap_status` | Check swap execution status |
 | `hydra_swap_submit_deposit` | Notify 1Click of broadcast deposit tx |
 
-### Signing (gated by `policy.readOnly = false`, dry-run by default)
+### Signing — gated, dry-run by default
 
 | Tool | What it does |
 |---|---|
-| `hydra_send_near` | Send native NEAR from the configured account |
-| `hydra_send_ft` | Send a NEP-141 fungible token (ft_transfer) |
-| `hydra_contract_call` | State-changing call to a NEAR contract |
+| `hydra_send_near` | Send native NEAR |
+| `hydra_send_ft` | Send a NEP-141 fungible token |
+| `hydra_contract_call` | State-changing NEAR contract call |
 | `hydra_send_evm` | Send on any EVM chain via Chain Signatures (native or ERC-20) |
-| `hydra_send_btc` | Send BTC via Chain Signatures (UTXO via Mempool API) |
+| `hydra_send_btc` | Send BTC via Chain Signatures |
 | `hydra_send_solana` | Send SOL via Chain Signatures |
-| `hydra_swap_execute` | End-to-end cross-chain swap, auto-routes by origin chain (NEAR / EVM / BTC / Solana) |
+| `hydra_swap_execute` | End-to-end cross-chain swap, auto-routed by origin chain |
 
-**Every signing tool defaults `dry: true`.** Dry mode returns the plan (and for EVM, the encoded calldata + derived sender). Set `dry: false` to actually broadcast. On top of that, `policy.readOnly` defaults to `true` — even with `dry: false`, a tool throws unless the user has explicitly opted out of read-only.
+Every signing tool throws unless `policy.readOnly = false`, and defaults `dry: true`. See [SECURITY.md](SECURITY.md).
 
-Every CLI subcommand mirrors a tool one-to-one.
+---
+
+## How it works
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│  Claude Code / Cursor / Agents SDK / human in the terminal  │
+└─────────────────────────────────────────────────────────────┘
+                              │
+                MCP (stdio)   │   CLI (commander)
+                              ▼
+        ┌───────────────────────────────────────┐
+        │            near-hydra core            │
+        │  ┌─────────────────────────────────┐  │
+        │  │  policy │ config │ state cache  │  │
+        │  └─────────────────────────────────┘  │
+        └─────┬─────┬──────┬────────┬───────────┘
+              │     │      │        │
+              ▼     ▼      ▼        ▼
+       near-api-js chainsig.js  one-click  viem / @solana/web3.js
+       (NEAR)      (MPC across  (Intents)  (chain RPCs)
+                    every chain)
+```
+
+`near-hydra` doesn't reinvent any protocol. It composes the official libraries behind one config, one auth model, one tool surface — and adds the connective tissue (memoization, error mapping, policy, dry-run-by-default) that an autonomous agent actually needs.
 
 ---
 
@@ -177,28 +198,18 @@ Defaults work out of the box. Override via `~/.near-hydra/config.json` or env va
 |---|---|
 | `NEAR_HYDRA_NETWORK` | `mainnet` or `testnet` |
 | `NEAR_HYDRA_ACCOUNT_ID` | Your NEAR account |
-| `NEAR_HYDRA_PRIVATE_KEY` | `ed25519:...` (only needed for signing tx) |
-| `NEAR_HYDRA_RPC_NEAR` | Override NEAR RPC |
-| `NEAR_HYDRA_RPC_ETHEREUM` | Override Ethereum RPC |
-| `NEAR_HYDRA_RPC_POLYGON` | Override Polygon RPC |
-| `NEAR_HYDRA_RPC_ARBITRUM` | Override Arbitrum RPC |
-| `NEAR_HYDRA_RPC_BASE` | Override Base RPC |
-| `NEAR_HYDRA_RPC_OPTIMISM` | Override Optimism RPC |
-| `NEAR_HYDRA_RPC_BNB` | Override BNB Chain RPC |
-| `NEAR_HYDRA_RPC_AVALANCHE` | Override Avalanche C-chain RPC |
-| `NEAR_HYDRA_RPC_AURORA` | Override Aurora RPC |
-| `NEAR_HYDRA_RPC_SOLANA` | Override Solana RPC |
-| `NEAR_HYDRA_RPC_BITCOIN_MEMPOOL` | Override Mempool API |
+| `NEAR_HYDRA_PRIVATE_KEY` | `ed25519:...` (only needed for signing) |
+| `NEAR_HYDRA_READ_ONLY` | `false` to enable signing (default `true`) |
+| `NEAR_HYDRA_MAX_VALUE_NEAR` | Cap a single NEAR transfer (e.g. `"5"`) |
+| `NEAR_HYDRA_MAX_VALUE_WEI` | Cap a single EVM native transfer in wei |
+| `NEAR_HYDRA_RPC_<CHAIN>` | Override any chain's RPC |
 | `NEAR_HYDRA_MPC_CONTRACT` | Override MPC contract (advanced) |
 | `NEAR_HYDRA_ONECLICK_API_KEY` | 1Click partner key (skips 0.2% fee) |
 | `NEAR_HYDRA_CONFIG` | Path to alternate config file |
-| `NEAR_HYDRA_READ_ONLY` | `false` to enable signing (default `true`) |
-| `NEAR_HYDRA_MAX_VALUE_NEAR` | Cap on a single NEAR transfer (e.g. `"5"`) |
-| `NEAR_HYDRA_MAX_VALUE_WEI` | Cap on a single EVM native transfer in wei |
 
-Every RPC is overridable individually. Public endpoints rate-limit you? Point at Alchemy, QuickNode, dRPC, or your own infra.
+`<CHAIN>` is one of `NEAR`, `ETHEREUM`, `POLYGON`, `ARBITRUM`, `BASE`, `OPTIMISM`, `BNB`, `AVALANCHE`, `AURORA`, `SOLANA`, `BITCOIN_MEMPOOL`. When public endpoints rate-limit you, point at Alchemy / QuickNode / dRPC / your own infra.
 
-### Config file example (`~/.near-hydra/config.json`)
+### Config file example
 
 ```json
 {
@@ -207,9 +218,13 @@ Every RPC is overridable individually. Public endpoints rate-limit you? Point at
     "id": "alice.near",
     "privateKey": "ed25519:..."
   },
+  "policy": {
+    "readOnly": false,
+    "maxValueNear": "5"
+  },
   "rpc": {
     "ethereum": "https://your-ethereum-rpc",
-    "solana":   "https://your-solana-rpc"
+    "solana": "https://your-solana-rpc"
   },
   "oneClick": {
     "apiKey": "your-1click-partner-key"
@@ -219,27 +234,15 @@ Every RPC is overridable individually. Public endpoints rate-limit you? Point at
 
 ---
 
-## Roadmap
-
-| Version | Scope |
-|---|---|
-| **v0.1** | Read-only across 10 chains + 1Click swap discovery |
-| **v0.2** | NEAR sends + contract writes, EVM send via Chain Signatures, NEAR-origin swap_execute, policy layer |
-| **v0.3** *(now)* | BTC + Solana sends; swap_execute auto-routes by origin chain (NEAR / EVM / BTC / Solana). All 10 chains support read AND write. |
-| **v0.4** | Shade Agent deploy/whitelist/status; NEP-366 meta-transactions |
-| **v1.0** | Function-call access key automation; allowlist/allowance enforcement; `hydra do "<natural language>"` goal verb |
-
----
-
 ## Architecture
 
 ```
-core/        config • NEAR provider • Chain Signatures wrappers • 1Click wrappers
-mcp-server/  exposes core functions as MCP tools (stdio transport)
-cli/         exposes core functions as commander subcommands
+core/        config • signers • Chain Signatures wrappers • 1Click client • policy
+mcp-server/  exposes core as MCP tools (stdio transport)
+cli/         exposes core as commander subcommands
 ```
 
-Built on the giants:
+Built on:
 
 - [chainsig.js](https://github.com/NearDeFi/chainsig.js) — cross-chain MPC signing
 - [@defuse-protocol/one-click-sdk-typescript](https://github.com/defuse-protocol/one-click-sdk-typescript) — NEAR Intents 1Click
@@ -248,48 +251,59 @@ Built on the giants:
 - [@solana/web3.js](https://github.com/solana-labs/solana-web3.js) — Solana client
 - [@modelcontextprotocol/sdk](https://github.com/modelcontextprotocol/typescript-sdk) — MCP server
 
-`near-hydra` doesn't reinvent any protocol — it composes existing libraries behind one config, one auth model, one tool surface.
+---
+
+## Roadmap
+
+| Version | Scope |
+|---|---|
+| **v0.1** | Read-only across 10 chains; 1Click swap discovery |
+| **v0.2** | NEAR sends + contract writes; EVM send via Chain Signatures; NEAR-origin swap_execute; policy layer |
+| **v0.3** *(now)* | BTC + Solana sends; swap_execute auto-routes 4 origin chains. Read AND write working on every chain. |
+| **v0.4** | Solana SPL tokens; raw NEAR Intents (deposits, solver-relay); Omnibridge |
+| **v0.5** | Shade Agent deploy/whitelist/status; NEP-366 meta-transactions |
+| **v1.0** | Function-call key automation; per-tool confirmations; `hydra do "<natural language>"` goal verb |
 
 ---
 
-## Security
+## FAQ
 
-`near-hydra` is read-only by default with multiple safety layers stacked:
+### How is this different from `nearai/near-mcp`?
 
-1. **`policy.readOnly: true` is the default.** Every signing tool throws unless you explicitly set `policy.readOnly: false` (or `NEAR_HYDRA_READ_ONLY=false`).
-2. **Every signing tool defaults `dry: true`.** Dry mode returns the planned transaction (including derived sender, encoded calldata, etc.) without broadcasting. Pass `dry: false` to actually broadcast.
-3. **Optional value caps.** `policy.maxValueNear` / `policy.maxValueWei` (or env equivalents) refuse transfers above a threshold.
-4. **No signer = no signing.** Tools fail loudly if `account.id` and `account.privateKey` aren't configured.
+`near-mcp` is excellent for NEAR-native operations and Ref Finance swaps (23 tools). `near-hydra` extends to **Chain Signatures** (sign on every chain) and **NEAR Intents 1Click** (cross-chain swaps), with a stacked safety model and a cohesive CLI alongside. They're complementary — you can run both.
 
-Beyond the in-tool defenses:
+### Is this affiliated with NEAR Foundation?
 
-- **Private keys are stored unencrypted** in `~/.near-hydra/config.json` or env vars. Treat them like SSH keys: lock down file permissions, never commit them, never paste them into AI agent contexts you don't fully control.
-- **Use NEAR function-call access keys**, not full-access keys, when handing credentials to an agent. The permission model lets you scope a key to specific contracts/methods with capped allowances — a prompt-injection that says "drain my wallet" then fails at the protocol layer because the key can't transfer.
-- **Test on testnet first.** `NEAR_HYDRA_NETWORK=testnet` switches every chain default. NEAR mainnet operations are live money.
+No. It's an unofficial open-source project built on top of NEAR's official libraries. We file upstream issues for bugs we find.
 
-A future v1.0 policy engine adds allowlists and per-tool confirmations.
-
-## Known notes
-
-- Mainnet MPC contract pinned to **`v1.signer`**. chainsig.js's bundled default (`v1.sig-net.near`) appears stale; we use the deployed NEAR contract.
-- Solana derivation includes a small workaround for a chainsig.js v1.1.14 bug (Ed25519 keys collapsed to SEC1 hex). We derive directly from the MPC contract for Solana.
-- `npm install` runs an idempotent postinstall patch for a known chainsig.js ESM packaging issue (extensionless `cosmjs-types` imports).
-- Not yet on npm — clone + build for now. Will publish once v0.2 lands.
-
----
-
-## Why "hydra"?
+### Why "hydra"?
 
 Many heads, one body. Each chain is a head. The NEAR account is the body. The agent has many faces but one identity. Cut off a chain — derive again. The agent endures.
+
+### Does this expose my private key to the LLM?
+
+No. Private keys live in your local config or env vars. The LLM calls MCP tools that pass through `near-hydra`, which signs locally with your key. The LLM never sees the key bytes. That said — a malicious or prompt-injected LLM that's been given signing permission can ask hydra to send funds. Use **function-call access keys with capped allowances** (see `policy` and [SECURITY.md](SECURITY.md)).
+
+### Can I add more chains?
+
+Yes — any chain `chainsig.js` already supports (Cosmos, XRP, SUI, Aptos) just needs adapter wiring + RPC config. PRs welcome. Chains MPC doesn't yet support need protocol-level work.
+
+### How is this funded?
+
+Self-funded; not seeking grants currently. If you want to support, contribute PRs or upstream chainsig.js fixes.
 
 ---
 
 ## Contributing
 
-Open to PRs and issues. The roadmap above is the priority list. If you want to take on `v0.2` (signing/sending), file an issue first to coordinate.
-
----
+Issues + PRs welcome. The roadmap above is the priority list. For non-trivial work, please open an issue first.
 
 ## License
 
-[Apache-2.0](LICENSE)
+[Apache-2.0](LICENSE) — security-related disclosures: [SECURITY.md](SECURITY.md)
+
+---
+
+<div align="center">
+<sub>Built with love by people who think NEAR's chain abstraction deserves a worthy CLI.</sub>
+</div>
