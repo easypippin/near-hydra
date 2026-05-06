@@ -23,6 +23,14 @@ Built for AI agents and humans.
 
 ---
 
+## Try it right now (zero setup)
+
+```bash
+npx -y near-hydra account balance-all near
+```
+
+Returns ten real chain addresses + balances derived from the NEAR account `near`. No config file, no key, no signup. Defaults to read-only mainnet.
+
 ## What you can do, in two lines
 
 ```bash
@@ -159,7 +167,21 @@ The same flow works EVM-origin: pass `nep141:eth-0x...omft.near` as `--from` and
 
 ---
 
-## Tools (17 total)
+## Documentation
+
+**Examples / cookbook:**
+- [Multi-chain identity in 30 seconds](examples/01-multichain-identity.md) — derive addresses on every chain from one NEAR account.
+- [Wire into Claude Code](examples/02-claude-code-mcp.md) — MCP setup, sample prompts, signing flow, safety levers.
+- [Your first cross-chain swap](examples/03-cross-chain-swap.md) — NEAR-origin, EVM-origin, and SPL-origin walkthroughs.
+- [Troubleshooting](examples/04-troubleshooting.md) — RPC rate limits, MPC contract changes, gas, ESM bug, common gotchas.
+
+**Reference:**
+- [Concepts](docs/CONCEPTS.md) — Chain Signatures, NEAR Intents, account model, why this only works on NEAR.
+- [Tool reference](docs/TOOLS.md) — every MCP tool, every input field, every output shape.
+
+---
+
+## Tools (18 total)
 
 ### Read-only — safe by default
 
@@ -290,19 +312,28 @@ Built on:
 |---|---|
 | **v0.1** | Read-only across 10 chains; 1Click swap discovery |
 | **v0.2** | NEAR sends + contract writes; EVM send via Chain Signatures; NEAR-origin swap_execute; policy layer |
-| **v0.3** | BTC + Solana sends; swap_execute auto-routes 4 origin chains. |
-| **v0.4** *(now)* | Solana SPL token send via Chain Signatures; SPL-origin swap_execute (auto-creates dest ATA, looks up real mint via 1Click tokens). |
-| **v0.5** | Raw NEAR Intents (deposits, solver-relay); Omnibridge; nep245 multi-token bridges. |
-| **v0.5** | Shade Agent deploy/whitelist/status; NEP-366 meta-transactions |
-| **v1.0** | Function-call key automation; per-tool confirmations; `hydra do "<natural language>"` goal verb |
+| **v0.3** | BTC + native-Solana sends; swap_execute auto-routes 4 origin chains |
+| **v0.4** *(now)* | Solana SPL token send (auto-creates dest ATA); SPL-origin swap_execute via real-mint lookup; Solana broadcast bug fix |
+| **v0.5** | Function-call access key generator (`hydra_create_agent_key`); arbitrary message signing (SIWE / SIWS via Chain Signatures); MCP resources for chains/tokens; auto-bootstrap gas via 1Click |
+| **v0.6** | Raw NEAR Intents (custom intents, solver-relay); Omnibridge; nep245 multi-token bridges; Shade Agent deploy/whitelist; NEP-366 meta-transactions |
+| **v1.0** | Per-tool confirmations; allowlist enforcement; `hydra do "<natural language>"` goal verb |
 
 ---
 
 ## FAQ
 
-### How is this different from `nearai/near-mcp`?
+### How is this different from other NEAR tools?
 
-`near-mcp` is excellent for NEAR-native operations and Ref Finance swaps (23 tools). `near-hydra` extends to **Chain Signatures** (sign on every chain) and **NEAR Intents 1Click** (cross-chain swaps), with a stacked safety model and a cohesive CLI alongside. They're complementary — you can run both.
+|  | Chain Signatures | NEAR Intents | Agent-native (MCP) | Scope |
+|---|:---:|:---:|:---:|---|
+| `nearai/near-mcp` | ❌ | ❌ | ✅ | NEAR-native + Ref Finance (23 tools) |
+| `IQAIcom/mcp-near-intents` | ❌ | ✅ 1Click only | ✅ | Intents quotes (5 tools) |
+| Bitte Protocol `make-agent` | ❌ | ❌ | publishing-only | Agent registry + AI wallet |
+| `chainsig.js` (lib) | ✅ | ❌ | ❌ | Cross-chain signing library |
+| `@defuse-protocol/intents-sdk` (lib) | ❌ | ✅ | ❌ | Intents library |
+| **`near-hydra`** | ✅ 10 chains | ✅ + auto-routing | ✅ 18 tools | All of NEAR's stack, composed |
+
+We don't compete with these — we compose them. `near-hydra-core` depends on `chainsig.js`, the 1Click SDK, and the modular `@near-js/*` packages. The agent-ergonomic surface and the safety layer are what's new.
 
 ### Is this affiliated with NEAR Foundation?
 
@@ -325,18 +356,6 @@ Yes — any chain `chainsig.js` already supports (Cosmos, XRP, SUI, Aptos) just 
 Self-funded; not seeking grants currently. If you want to support, contribute PRs or upstream chainsig.js fixes.
 
 ---
-
-## Documentation
-
-**Examples / cookbook:**
-- [Multi-chain identity in 30 seconds](examples/01-multichain-identity.md) — derive addresses on every chain from one NEAR account.
-- [Wire into Claude Code](examples/02-claude-code-mcp.md) — MCP setup, sample prompts, signing flow, safety levers.
-- [Your first cross-chain swap](examples/03-cross-chain-swap.md) — full walkthrough of swapping wNEAR → SOL on Solana, dry-run + broadcast.
-- [Troubleshooting](examples/04-troubleshooting.md) — RPC rate limits, MPC contract changes, gas, ESM bug, common gotchas.
-
-**Reference:**
-- [Concepts](docs/CONCEPTS.md) — Chain Signatures, NEAR Intents, account model, why this only works on NEAR.
-- [Tool reference](docs/TOOLS.md) — every MCP tool, every input field, every output shape.
 
 ## Contributing
 
