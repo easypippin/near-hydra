@@ -98,27 +98,37 @@ Claude calls `hydra_address_derive` and returns a real BTC address.
 ## CLI cheatsheet
 
 ```bash
-hydra config                                          # show active config
-
-hydra account view alice.near                         # NEAR account state
+# Read-only — works without any setup
+hydra config
+hydra account view alice.near
 hydra account balance-all alice.near                  # multi-chain in one call
-
-hydra address derive -c bitcoin  -p alice.near        # derive BTC address
+hydra address derive -c bitcoin  -p alice.near
 hydra address derive -c ethereum -p alice.near
 hydra address derive -c solana   -p alice.near
 hydra address balance -c bitcoin -a bc1qshk...
+hydra contract view wrap.near ft_balance_of -a '{"account_id":"alice.near"}'
+hydra swap tokens
 
-hydra contract view wrap.near ft_balance_of \
-  -a '{"account_id":"alice.near"}'
+# Signing — requires NEAR_HYDRA_READ_ONLY=false + account credentials.
+# Every command defaults to a dry run; pass --broadcast to actually send.
+hydra send near alice.near 1000000000000000000000000             # 1 NEAR — dry
+hydra send near alice.near 1000000000000000000000000 --broadcast # actually send
+hydra send ft wrap.near alice.near 1000000000000000000000000
+hydra call my-contract.near my_method -a '{"x":1}' --deposit-yocto 1
+hydra send evm -c base --to 0x... --value-wei 1000000000000000
+hydra send evm -c polygon --to ignored \
+  --erc20-token 0x3c49... --erc20-recipient 0xABCD... --erc20-amount 1000000
 
-hydra swap tokens                                     # 1Click token catalog
-hydra swap quote '<json>'                             # get cross-chain quote
-hydra swap status <depositAddress>
+# End-to-end cross-chain swap (NEAR-origin)
+hydra swap execute --from nep141:wrap.near --to nep141:eth.bridge.near \
+  --amount 100000000000000000000000 --recipient 0xRecipient...
 ```
 
 ---
 
 ## Tools (current set)
+
+### Read-only (safe by default)
 
 | Tool | What it does |
 |---|---|
@@ -132,6 +142,18 @@ hydra swap status <depositAddress>
 | `hydra_swap_quote` | Get a cross-chain swap quote |
 | `hydra_swap_status` | Check swap execution status |
 | `hydra_swap_submit_deposit` | Notify 1Click of broadcast deposit tx |
+
+### Signing (gated by `policy.readOnly = false`, dry-run by default)
+
+| Tool | What it does |
+|---|---|
+| `hydra_send_near` | Send native NEAR from the configured account |
+| `hydra_send_ft` | Send a NEP-141 fungible token (ft_transfer) |
+| `hydra_contract_call` | State-changing call to a NEAR contract |
+| `hydra_send_evm` | Send on any EVM chain via Chain Signatures (native or ERC-20) |
+| `hydra_swap_execute` | End-to-end NEAR-origin cross-chain swap (quote → ft_transfer → submit deposit) |
+
+**Every signing tool defaults `dry: true`.** Dry mode returns the plan (and for EVM, the encoded calldata + derived sender). Set `dry: false` to actually broadcast. On top of that, `policy.readOnly` defaults to `true` — even with `dry: false`, a tool throws unless the user has explicitly opted out of read-only.
 
 Every CLI subcommand mirrors a tool one-to-one.
 
@@ -162,6 +184,9 @@ Defaults work out of the box. Override via `~/.near-hydra/config.json` or env va
 | `NEAR_HYDRA_MPC_CONTRACT` | Override MPC contract (advanced) |
 | `NEAR_HYDRA_ONECLICK_API_KEY` | 1Click partner key (skips 0.2% fee) |
 | `NEAR_HYDRA_CONFIG` | Path to alternate config file |
+| `NEAR_HYDRA_READ_ONLY` | `false` to enable signing (default `true`) |
+| `NEAR_HYDRA_MAX_VALUE_NEAR` | Cap on a single NEAR transfer (e.g. `"5"`) |
+| `NEAR_HYDRA_MAX_VALUE_WEI` | Cap on a single EVM native transfer in wei |
 
 Every RPC is overridable individually. Public endpoints rate-limit you? Point at Alchemy, QuickNode, dRPC, or your own infra.
 
@@ -190,11 +215,11 @@ Every RPC is overridable individually. Public endpoints rate-limit you? Point at
 
 | Version | Scope |
 |---|---|
-| **v0.1** *(now)* | Read-only across 6 chains + 1Click swap discovery |
-| **v0.2** | Signing + broadcasting on every chain; full 1Click swap execution |
-| **v0.3** | Raw NEAR Intents (deposits, solver-relay); Omnibridge |
+| **v0.1** | Read-only across 10 chains + 1Click swap discovery |
+| **v0.2** *(now)* | NEAR sends + contract writes, EVM send via Chain Signatures, end-to-end NEAR-origin swap_execute, policy layer (read-only-by-default + dry-run-by-default + value caps) |
+| **v0.3** | EVM/Solana/Bitcoin-origin swap_execute; raw NEAR Intents (deposits, solver-relay); Omnibridge; Solana + BTC sends |
 | **v0.4** | Shade Agent deploy/whitelist/status; NEP-366 meta-transactions |
-| **v1.0** | Policy engine (function-call key allowances, allowlists); `hydra do "<natural language>"` goal verb |
+| **v1.0** | Function-call access key automation; allowlist/allowance enforcement; `hydra do "<natural language>"` goal verb |
 
 ---
 
@@ -221,13 +246,20 @@ Built on the giants:
 
 ## Security
 
-`near-hydra` is read-only by default. To use signing operations (coming in v0.2):
+`near-hydra` is read-only by default with multiple safety layers stacked:
+
+1. **`policy.readOnly: true` is the default.** Every signing tool throws unless you explicitly set `policy.readOnly: false` (or `NEAR_HYDRA_READ_ONLY=false`).
+2. **Every signing tool defaults `dry: true`.** Dry mode returns the planned transaction (including derived sender, encoded calldata, etc.) without broadcasting. Pass `dry: false` to actually broadcast.
+3. **Optional value caps.** `policy.maxValueNear` / `policy.maxValueWei` (or env equivalents) refuse transfers above a threshold.
+4. **No signer = no signing.** Tools fail loudly if `account.id` and `account.privateKey` aren't configured.
+
+Beyond the in-tool defenses:
 
 - **Private keys are stored unencrypted** in `~/.near-hydra/config.json` or env vars. Treat them like SSH keys: lock down file permissions, never commit them, never paste them into AI agent contexts you don't fully control.
-- **Use function-call access keys**, not full-access keys, when handing credentials to an agent. NEAR's permission model lets you create keys scoped to specific contracts/methods with capped allowances. A prompt-injection that says "drain my wallet" should fail because the key can't transfer.
-- **Read-only mode is safe** to run against mainnet without a key. The default config has no key.
+- **Use NEAR function-call access keys**, not full-access keys, when handing credentials to an agent. The permission model lets you scope a key to specific contracts/methods with capped allowances — a prompt-injection that says "drain my wallet" then fails at the protocol layer because the key can't transfer.
+- **Test on testnet first.** `NEAR_HYDRA_NETWORK=testnet` switches every chain default. NEAR mainnet operations are live money.
 
-A v1.0 policy engine (max-tx-value, allowlists, confirmation thresholds) is on the roadmap.
+A future v1.0 policy engine adds allowlists and per-tool confirmations.
 
 ## Known notes
 

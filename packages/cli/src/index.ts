@@ -13,9 +13,34 @@ import {
   getSwapQuote,
   getSwapStatus,
   submitSwapDeposit,
+  sendNear,
+  sendFt,
+  callContract,
+  sendEvm,
+  swapExecute,
   type SupportedChain,
+  type EvmChain,
   type QuoteRequest,
 } from "@near-hydra/core";
+
+const EVM_CHAINS: readonly EvmChain[] = [
+  "ethereum",
+  "polygon",
+  "arbitrum",
+  "base",
+  "optimism",
+  "bnb",
+  "avalanche",
+  "aurora",
+];
+
+function evmChainOpt(value: string): EvmChain {
+  if (!EVM_CHAINS.includes(value as EvmChain)) {
+    throw new Error(`Unsupported EVM chain '${value}'. Supported: ${EVM_CHAINS.join(", ")}`);
+  }
+  return value as EvmChain;
+}
+
 
 const program = new Command();
 program
@@ -224,5 +249,166 @@ swap
       fail(e);
     }
   });
+
+const send = program.command("send").description("Sign and send transactions");
+send
+  .command("near <to> <amountYocto>")
+  .description("Send native NEAR (dry=true by default)")
+  .option("--broadcast", "Actually broadcast (default is dry-run)")
+  .action(async (to: string, amountYocto: string, opts: { broadcast?: boolean }) => {
+    try {
+      out(await sendNear(loadConfig(), { to, amountYocto, dry: !opts.broadcast }));
+    } catch (e) {
+      fail(e);
+    }
+  });
+
+send
+  .command("ft <tokenContract> <to> <amount>")
+  .description("Send a NEP-141 fungible token")
+  .option("--memo <memo>")
+  .option("--broadcast", "Actually broadcast (default is dry-run)")
+  .action(
+    async (
+      tokenContract: string,
+      to: string,
+      amount: string,
+      opts: { memo?: string; broadcast?: boolean },
+    ) => {
+      try {
+        out(
+          await sendFt(loadConfig(), {
+            tokenContract,
+            to,
+            amount,
+            memo: opts.memo,
+            dry: !opts.broadcast,
+          }),
+        );
+      } catch (e) {
+        fail(e);
+      }
+    },
+  );
+
+send
+  .command("evm")
+  .description("Send a transaction on an EVM chain via Chain Signatures")
+  .requiredOption("-c, --chain <chain>", `${EVM_CHAINS.join("|")}`)
+  .requiredOption("--to <address>", "Recipient (0x...) or token contract for ERC-20")
+  .option("--value-wei <wei>", "Native value in wei", "0")
+  .option("--data <hex>", "Calldata 0x...", "0x")
+  .option("--erc20-token <addr>", "ERC-20 token contract")
+  .option("--erc20-recipient <addr>")
+  .option("--erc20-amount <baseUnits>")
+  .option("--predecessor <id>", "NEAR account whose MPC keys derive the sender")
+  .option("--path <s>", "Derivation path")
+  .option("--broadcast", "Actually broadcast")
+  .action(
+    async (opts: {
+      chain: string;
+      to: string;
+      valueWei: string;
+      data: string;
+      erc20Token?: string;
+      erc20Recipient?: string;
+      erc20Amount?: string;
+      predecessor?: string;
+      path?: string;
+      broadcast?: boolean;
+    }) => {
+      try {
+        const erc20 =
+          opts.erc20Token && opts.erc20Recipient && opts.erc20Amount
+            ? { token: opts.erc20Token, recipient: opts.erc20Recipient, amount: opts.erc20Amount }
+            : undefined;
+        out(
+          await sendEvm(loadConfig(), {
+            chain: evmChainOpt(opts.chain),
+            to: opts.to,
+            valueWei: opts.valueWei,
+            dataHex: opts.data as `0x${string}`,
+            erc20,
+            predecessor: opts.predecessor,
+            path: opts.path,
+            dry: !opts.broadcast,
+          }),
+        );
+      } catch (e) {
+        fail(e);
+      }
+    },
+  );
+
+const contractCmd = program
+  .command("call <contractId> <method>")
+  .description("Call a state-changing method on a NEAR contract")
+  .option("-a, --args <json>", "Args as JSON", "{}")
+  .option("--deposit-yocto <yocto>")
+  .option("--gas <units>")
+  .option("--broadcast", "Actually broadcast");
+contractCmd.action(
+  async (
+    contractId: string,
+    method: string,
+    opts: { args: string; depositYocto?: string; gas?: string; broadcast?: boolean },
+  ) => {
+    try {
+      out(
+        await callContract(loadConfig(), {
+          contractId,
+          method,
+          args: JSON.parse(opts.args),
+          depositYocto: opts.depositYocto,
+          gas: opts.gas,
+          dry: !opts.broadcast,
+        }),
+      );
+    } catch (e) {
+      fail(e);
+    }
+  },
+);
+
+swap
+  .command("execute")
+  .description("Execute a NEAR-origin cross-chain swap end-to-end (dry by default)")
+  .requiredOption("--from <assetId>", "Origin asset (must start with nep141:)")
+  .requiredOption("--to <assetId>", "Destination asset")
+  .requiredOption("--amount <baseUnits>")
+  .requiredOption("--recipient <addr>", "Destination-chain address")
+  .option("--refund-to <id>", "NEAR account for refunds")
+  .option("--swap-type <t>", "EXACT_INPUT|EXACT_OUTPUT|FLEX_INPUT|ANY_INPUT", "EXACT_INPUT")
+  .option("--slippage-bps <n>", "Slippage in basis points", "100")
+  .option("--broadcast", "Actually execute (default is dry-run)")
+  .action(
+    async (opts: {
+      from: string;
+      to: string;
+      amount: string;
+      recipient: string;
+      refundTo?: string;
+      swapType: string;
+      slippageBps: string;
+      broadcast?: boolean;
+    }) => {
+      try {
+        out(
+          await swapExecute(loadConfig(), {
+            originAsset: opts.from,
+            destinationAsset: opts.to,
+            amount: opts.amount,
+            recipient: opts.recipient,
+            refundTo: opts.refundTo,
+            swapType: opts.swapType as never,
+            slippageTolerance: Number(opts.slippageBps),
+            dry: !opts.broadcast,
+          }),
+        );
+      } catch (e) {
+        fail(e);
+      }
+    },
+  );
 
 program.parseAsync(process.argv).catch(fail);

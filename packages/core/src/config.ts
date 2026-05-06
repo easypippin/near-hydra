@@ -18,6 +18,12 @@ export interface RpcEndpoints {
   bitcoinMempool: string;
 }
 
+export interface PolicyConfig {
+  readOnly: boolean;
+  maxValueNear?: string;
+  maxValueWei?: string;
+}
+
 export interface HydraConfig {
   network: Network;
   account?: {
@@ -26,6 +32,7 @@ export interface HydraConfig {
   };
   rpc: RpcEndpoints;
   mpcContract: string;
+  policy?: PolicyConfig;
   oneClick: {
     baseUrl: string;
     apiKey?: string;
@@ -49,6 +56,7 @@ const DEFAULTS: Record<Network, HydraConfig> = {
       bitcoinMempool: "https://mempool.space/api",
     },
     mpcContract: "v1.signer",
+    policy: { readOnly: true },
     oneClick: { baseUrl: "https://1click.chaindefuser.com" },
   },
   testnet: {
@@ -67,6 +75,7 @@ const DEFAULTS: Record<Network, HydraConfig> = {
       bitcoinMempool: "https://mempool.space/testnet/api",
     },
     mpcContract: "v1.signer-prod.testnet",
+    policy: { readOnly: true },
     oneClick: { baseUrl: "https://1click.chaindefuser.com" },
   },
 };
@@ -136,6 +145,21 @@ export function loadConfig(): HydraConfig {
   if (Object.keys(rpcOverrides).length > 0) {
     cfg = { ...cfg, rpc: { ...cfg.rpc, ...rpcOverrides } };
   }
+
+  const envReadOnly = process.env.NEAR_HYDRA_READ_ONLY;
+  if (envReadOnly !== undefined) {
+    const ro = envReadOnly !== "false" && envReadOnly !== "0";
+    cfg = { ...cfg, policy: { ...(cfg.policy ?? { readOnly: true }), readOnly: ro } };
+  }
+  const envMaxNear = process.env.NEAR_HYDRA_MAX_VALUE_NEAR;
+  if (envMaxNear) {
+    cfg = { ...cfg, policy: { ...(cfg.policy ?? { readOnly: true }), maxValueNear: envMaxNear } };
+  }
+  const envMaxWei = process.env.NEAR_HYDRA_MAX_VALUE_WEI;
+  if (envMaxWei) {
+    cfg = { ...cfg, policy: { ...(cfg.policy ?? { readOnly: true }), maxValueWei: envMaxWei } };
+  }
+
   return cfg;
 }
 
@@ -148,5 +172,6 @@ export function configSummary(c: HydraConfig) {
     nearRpc: c.rpc.near,
     oneClickBaseUrl: c.oneClick.baseUrl,
     oneClickAuthed: Boolean(c.oneClick.apiKey),
+    policy: c.policy ?? { readOnly: true },
   };
 }

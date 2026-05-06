@@ -49,7 +49,7 @@ const adapterCache = new Map<string, unknown>();
 const evmClientCache = new Map<string, PublicClient>();
 const solanaConnectionCache = new Map<string, Connection>();
 
-function mpcContract(cfg: HydraConfig): contracts.ChainSignatureContract {
+export function mpcContract(cfg: HydraConfig): contracts.ChainSignatureContract {
   const key = `${cfg.network}::${cfg.mpcContract}::${cfg.rpc.near}`;
   let c = mpcContractCache.get(key);
   if (!c) {
@@ -83,11 +83,19 @@ function solanaConnection(cfg: HydraConfig): Connection {
   return c;
 }
 
-function adapterFor(cfg: HydraConfig, chain: SupportedChain) {
+export interface OpaqueChainAdapter {
+  deriveAddressAndPublicKey(predecessor: string, path: string): Promise<{ address: string; publicKey: string }>;
+  getBalance(address: string): Promise<{ balance: bigint; decimals: number }>;
+  prepareTransactionForSigning(req: unknown): Promise<{ transaction: unknown; hashesToSign: number[][] }>;
+  finalizeTransactionSigning(args: { transaction: unknown; rsvSignatures: unknown[] }): unknown;
+  broadcastTx(signed: unknown): Promise<{ hash: string }>;
+}
+
+export function adapterFor(cfg: HydraConfig, chain: SupportedChain): OpaqueChainAdapter {
   const key = `${chain}::${rpcUrl(cfg, chain)}::${cfg.network}::${cfg.mpcContract}`;
   const cached = adapterCache.get(key);
-  if (cached) return cached as ReturnType<typeof buildAdapter>;
-  const a = buildAdapter(cfg, chain);
+  if (cached) return cached as OpaqueChainAdapter;
+  const a = buildAdapter(cfg, chain) as unknown as OpaqueChainAdapter;
   adapterCache.set(key, a);
   return a;
 }
@@ -180,7 +188,7 @@ export async function deriveAddress(
       const address = raw.slice(prefix.length);
       return { chain, predecessor, path, address, publicKey: raw };
     }
-    const adapter = adapterFor(cfg, chain) as { deriveAddressAndPublicKey: (p: string, d: string) => Promise<{ address: string; publicKey: string }> };
+    const adapter = adapterFor(cfg, chain);
     const { address, publicKey } = await adapter.deriveAddressAndPublicKey(predecessor, path);
     return { chain, predecessor, path, address, publicKey };
   } catch (err) {
@@ -204,7 +212,7 @@ export async function chainBalance(
     const lamports = await solanaConnection(cfg).getBalance(new PublicKey(address));
     return { chain, address, balance: BigInt(lamports).toString(), decimals: 9 };
   }
-  const adapter = adapterFor(cfg, chain) as { getBalance: (addr: string) => Promise<{ balance: bigint; decimals: number }> };
+  const adapter = adapterFor(cfg, chain);
   const { balance, decimals } = await adapter.getBalance(address);
   return { chain, address, balance: balance.toString(), decimals };
 }

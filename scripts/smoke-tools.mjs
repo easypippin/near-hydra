@@ -15,6 +15,11 @@ const EXPECTED = [
   "hydra_swap_quote",
   "hydra_swap_status",
   "hydra_swap_submit_deposit",
+  "hydra_send_near",
+  "hydra_send_ft",
+  "hydra_contract_call",
+  "hydra_send_evm",
+  "hydra_swap_execute",
 ];
 
 const server = new McpServer({ name: "smoke", version: "0.0.0" });

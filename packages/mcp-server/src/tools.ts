@@ -13,11 +13,27 @@ import {
   getSwapQuote,
   getSwapStatus,
   submitSwapDeposit,
+  sendNear,
+  sendFt,
+  callContract,
+  sendEvm,
+  swapExecute,
   type SupportedChain,
+  type EvmChain,
   type QuoteRequest,
 } from "@near-hydra/core";
 
 const ChainEnum = z.enum(SUPPORTED_CHAINS as unknown as [SupportedChain, ...SupportedChain[]]);
+const EvmChainEnum = z.enum([
+  "ethereum",
+  "polygon",
+  "arbitrum",
+  "base",
+  "optimism",
+  "bnb",
+  "avalanche",
+  "aurora",
+] as const) as z.ZodEnum<[EvmChain, ...EvmChain[]]>;
 const SwapType = z.enum(["EXACT_INPUT", "EXACT_OUTPUT", "FLEX_INPUT", "ANY_INPUT"]);
 const AddrType = z.enum(["ORIGIN_CHAIN", "INTENTS"]);
 const RecipientType = z.enum(["DESTINATION_CHAIN", "INTENTS"]);
@@ -229,6 +245,128 @@ export function registerTools(server: McpServer) {
     async ({ depositAddress, txHash }) => {
       try {
         return ok(await submitSwapDeposit(loadConfig(), depositAddress, txHash));
+      } catch (e) {
+        return fail(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    "hydra_send_near",
+    {
+      description:
+        "Send native NEAR from the configured account. SAFE BY DEFAULT: dry=true returns the plan without broadcasting. Set dry=false to actually send. Requires policy.readOnly=false. amountYocto is in yocto (1 NEAR = 10^24 yocto).",
+      inputSchema: {
+        to: z.string(),
+        amountYocto: z.string().describe("Amount in yoctoNEAR. 10^24 yocto = 1 NEAR"),
+        dry: z.boolean().default(true),
+      },
+    },
+    async ({ to, amountYocto, dry }) => {
+      try {
+        return ok(await sendNear(loadConfig(), { to, amountYocto, dry }));
+      } catch (e) {
+        return fail(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    "hydra_send_ft",
+    {
+      description:
+        "Send a NEP-141 fungible token from the configured account. Calls ft_transfer with 1 yoctoNEAR deposit. SAFE: dry=true by default. Example: send wNEAR via tokenContract='wrap.near'.",
+      inputSchema: {
+        tokenContract: z.string().describe("FT contract account, e.g. 'wrap.near'"),
+        to: z.string().describe("Recipient NEAR account id"),
+        amount: z.string().describe("Amount in the token's base units"),
+        memo: z.string().optional(),
+        dry: z.boolean().default(true),
+      },
+    },
+    async ({ tokenContract, to, amount, memo, dry }) => {
+      try {
+        return ok(await sendFt(loadConfig(), { tokenContract, to, amount, memo, dry }));
+      } catch (e) {
+        return fail(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    "hydra_contract_call",
+    {
+      description:
+        "Call a state-changing method on a NEAR smart contract from the configured account. SAFE: dry=true by default. depositYocto is attached NEAR; gas is in TGas units (default 30 TGas).",
+      inputSchema: {
+        contractId: z.string(),
+        method: z.string(),
+        args: z.record(z.unknown()).optional(),
+        depositYocto: z.string().optional(),
+        gas: z.string().optional().describe("Gas in absolute units (10^12 = 1 TGas)"),
+        dry: z.boolean().default(true),
+      },
+    },
+    async (input) => {
+      try {
+        return ok(await callContract(loadConfig(), input));
+      } catch (e) {
+        return fail(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    "hydra_send_evm",
+    {
+      description:
+        "Send a transaction on an EVM chain from a Chain-Signature-derived address. Supports native value (valueWei) or ERC-20 transfer (erc20). SAFE: dry=true returns the prepared unsigned transaction for inspection; dry=false signs via MPC and broadcasts. Requires the derived address to have funds + gas. predecessor defaults to the configured NEAR account.",
+      inputSchema: {
+        chain: EvmChainEnum,
+        predecessor: z.string().optional(),
+        path: z.string().optional().describe("Derivation path. Defaults to '<chain>-1'"),
+        to: z.string().describe("Recipient 0x address (ignored if erc20 is set)"),
+        valueWei: z.string().optional().describe("Native value in wei"),
+        dataHex: z.string().optional().describe("Calldata as 0x-prefixed hex"),
+        erc20: z
+          .object({ token: z.string(), recipient: z.string(), amount: z.string() })
+          .optional()
+          .describe("ERC-20 transfer: builds calldata and sets to=token, value=0"),
+        dry: z.boolean().default(true),
+      },
+    },
+    async (input) => {
+      try {
+        return ok(await sendEvm(loadConfig(), input as never));
+      } catch (e) {
+        return fail(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    "hydra_swap_execute",
+    {
+      description:
+        "Execute a NEAR-origin cross-chain swap end-to-end via NEAR Intents 1Click: get a non-dry quote, ft_transfer the origin asset to the depositAddress, submit the deposit tx hash. Returns intent + tx info; poll hydra_swap_status to watch settlement. SAFE: dry=true by default — set dry=false to actually move funds. v0.2 supports NEAR-origin assets only (originAsset must start with 'nep141:').",
+      inputSchema: {
+        originAsset: z.string().describe("Must start with 'nep141:' (NEAR-side asset)"),
+        destinationAsset: z.string(),
+        amount: z.string().describe("Amount in originAsset's base units"),
+        recipient: z.string().describe("Destination-chain address"),
+        recipientType: RecipientType.default("DESTINATION_CHAIN"),
+        refundTo: z.string().optional().describe("Defaults to configured NEAR account"),
+        refundType: AddrType.default("INTENTS"),
+        depositType: AddrType.default("ORIGIN_CHAIN"),
+        swapType: SwapType.default("EXACT_INPUT"),
+        slippageTolerance: z.number().int().min(0).max(10000).default(100),
+        depositMode: DepositMode.optional(),
+        dry: z.boolean().default(true),
+      },
+    },
+    async (input) => {
+      try {
+        return ok(await swapExecute(loadConfig(), input as never));
       } catch (e) {
         return fail(e);
       }
