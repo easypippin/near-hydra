@@ -23,7 +23,7 @@ import {
   type SupportedChain,
   type EvmChain,
   type QuoteRequest,
-} from "@near-hydra/core";
+} from "near-hydra-core";
 
 const EVM_CHAINS: readonly EvmChain[] = [
   "ethereum",

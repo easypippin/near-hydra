@@ -23,7 +23,7 @@ import {
   type SupportedChain,
   type EvmChain,
   type QuoteRequest,
-} from "@near-hydra/core";
+} from "near-hydra-core";
 
 const ChainEnum = z.enum(SUPPORTED_CHAINS as unknown as [SupportedChain, ...SupportedChain[]]);
 const EvmChainEnum = z.enum([

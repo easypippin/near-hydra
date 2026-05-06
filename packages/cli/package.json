@@ -1,7 +1,7 @@
 {
-  "name": "@near-hydra/cli",
+  "name": "near-hydra",
   "version": "0.3.0",
-  "description": "Unified CLI for NEAR — accounts, Chain Signatures, NEAR Intents — for humans and scripts.",
+  "description": "Unified CLI + MCP server for NEAR — accounts, Chain Signatures, NEAR Intents — for humans and AI agents.",
   "type": "module",
   "main": "./dist/index.js",
   "bin": {
@@ -20,10 +20,10 @@
   "bugs": {
     "url": "https://github.com/nikshepsvn/near-hydra/issues"
   },
-  "keywords": ["near", "cli", "chain-signatures", "near-intents", "multichain"],
+  "keywords": ["near", "near-protocol", "cli", "chain-signatures", "near-intents", "multichain", "cross-chain", "blockchain", "ai-agents"],
   "license": "Apache-2.0",
   "dependencies": {
-    "@near-hydra/core": "0.3.0",
+    "near-hydra-core": "0.3.0",
     "commander": "^12.1.0"
   }
 }

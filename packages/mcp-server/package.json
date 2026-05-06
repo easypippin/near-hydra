@@ -1,5 +1,5 @@
 {
-  "name": "@near-hydra/mcp-server",
+  "name": "near-hydra-mcp",
   "version": "0.3.0",
   "description": "MCP server exposing the NEAR stack (accounts, Chain Signatures, NEAR Intents) as agent tools.",
   "type": "module",
@@ -20,11 +20,11 @@
   "bugs": {
     "url": "https://github.com/nikshepsvn/near-hydra/issues"
   },
-  "keywords": ["near", "mcp", "mcp-server", "claude", "ai-agents", "chain-signatures"],
+  "keywords": ["near", "near-protocol", "mcp", "mcp-server", "claude", "ai-agents", "chain-signatures", "near-intents"],
   "license": "Apache-2.0",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^1.29.0",
-    "@near-hydra/core": "0.3.0",
+    "near-hydra-core": "0.3.0",
     "zod": "^3.23.0"
   }
 }
