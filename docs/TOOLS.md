@@ -197,6 +197,20 @@ Pre-conditions: derived address must have SOL ≥ `lamports` + fees.
 
 ---
 
+## ✏️ hydra_send_spl
+
+Send a Solana SPL token via Chain Signatures from a derived Solana address. Hydra derives both source and destination ATAs (Associated Token Accounts) and creates the destination ATA on the fly if it doesn't exist (sender pays ~0.002 SOL of rent).
+
+**Input:** `{ predecessor?: string, path?: string, mint: string, to: string, amount: string, decimals?: number, dry?: boolean }`
+
+`mint` is the SPL mint base58 address (e.g. `EPjFWdd5AufqSSqeM2qN1xzybapC8G4wEGGkZwyTDt1v` for USDC). `to` is the recipient *wallet* address — hydra derives the destination ATA from `(mint, to)`. `amount` is in token base units. `decimals` is looked up on-chain via `getMint` if not provided.
+
+**Output:** `{ dry, plan: { kind: "send_spl", from, to, mint, amount, decimals, sourceAta, destAta, needsCreateDestAta, derivedFrom }, txHash?, signedTx? }`
+
+Pre-conditions: derived address must hold ≥ `amount` of the SPL token in its source ATA, plus a small SOL balance (rent for new ATAs + tx fees).
+
+---
+
 ## ✏️ hydra_swap_execute
 
 End-to-end cross-chain swap. Auto-routes the origin send by parsing `originAsset`:
@@ -207,6 +221,7 @@ End-to-end cross-chain swap. Auto-routes the origin send by parsing `originAsset
 | `nep141:eth-0x...omft.near`, `arb-...`, `pol-...`, `bsc-...`, `base-...`, `op-...`, `avax-...`, `aurora-...` | `sendEvm` (ERC-20 calldata if has contract suffix, native value if not) |
 | `nep141:btc.omft.near` | `sendBtc` |
 | `nep141:sol.omft.near` | `sendSolana` |
+| `nep141:sol-<omft-id>.omft.near` (SPL) | `sendSpl` (real mint resolved via 1Click `getTokens`) |
 
 **Input:** `{ originAsset, destinationAsset, amount, recipient, recipientType, refundTo?, refundType?, depositType?, swapType?, slippageTolerance?, depositMode?, dry?: boolean }`
 
@@ -237,6 +252,7 @@ near-hydra send ft <tokenContract> <to> <amount> [--memo ...] [--broadcast]
 near-hydra send evm -c <chain> --to <addr> [--value-wei ... | --erc20-token ... --erc20-recipient ... --erc20-amount ...] [--broadcast]
 near-hydra send btc <to> <satoshi> [--broadcast]
 near-hydra send sol <to> <lamports> [--broadcast]
+near-hydra send spl <mint> <to> <amount> [--decimals N] [--broadcast]
 near-hydra call <contractId> <method> [-a <jsonArgs>] [--deposit-yocto ...] [--gas ...] [--broadcast]
 ```
 

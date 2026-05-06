@@ -21,6 +21,7 @@ const EXPECTED = [
   "hydra_send_evm",
   "hydra_send_btc",
   "hydra_send_solana",
+  "hydra_send_spl",
   "hydra_swap_execute",
 ];
 

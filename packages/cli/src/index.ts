@@ -19,6 +19,7 @@ import {
   sendEvm,
   sendBtc,
   sendSolana,
+  sendSpl,
   swapExecute,
   type SupportedChain,
   type EvmChain,
@@ -320,6 +321,38 @@ send
       fail(e);
     }
   });
+
+send
+  .command("spl <mint> <to> <amount>")
+  .description("Send a Solana SPL token via Chain Signatures (auto-creates destination ATA if needed)")
+  .option("--decimals <n>", "Token decimals (else looked up on-chain)")
+  .option("--predecessor <id>")
+  .option("--path <s>")
+  .option("--broadcast", "Actually broadcast")
+  .action(
+    async (
+      mint: string,
+      to: string,
+      amount: string,
+      opts: { decimals?: string; predecessor?: string; path?: string; broadcast?: boolean },
+    ) => {
+      try {
+        out(
+          await sendSpl(loadConfig(), {
+            mint,
+            to,
+            amount,
+            decimals: opts.decimals !== undefined ? Number(opts.decimals) : undefined,
+            predecessor: opts.predecessor,
+            path: opts.path,
+            dry: !opts.broadcast,
+          }),
+        );
+      } catch (e) {
+        fail(e);
+      }
+    },
+  );
 
 send
   .command("evm")

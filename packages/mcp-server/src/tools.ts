@@ -19,6 +19,7 @@ import {
   sendEvm,
   sendBtc,
   sendSolana,
+  sendSpl,
   swapExecute,
   type SupportedChain,
   type EvmChain,
@@ -391,10 +392,34 @@ export function registerTools(server: McpServer) {
   );
 
   server.registerTool(
+    "hydra_send_spl",
+    {
+      description:
+        "Send a Solana SPL token from a Chain-Signature-derived Solana address. Auto-derives source + destination ATAs and creates the destination ATA on-the-fly if it doesn't exist (sender pays ~0.002 SOL rent). SAFE: dry=true returns the plan including ATAs and whether the destination needs creating. Amount in token base units (use mint's decimals). Decimals are looked up on-chain if not supplied.",
+      inputSchema: {
+        predecessor: z.string().optional(),
+        path: z.string().optional().describe("Derivation path; defaults to 'solana-1'"),
+        mint: z.string().describe("SPL mint address (base58)"),
+        to: z.string().describe("Recipient wallet address (base58). Hydra derives the destination ATA from this."),
+        amount: z.string().describe("Amount in token base units (e.g. for USDC/6 decimals, 1 USDC = '1000000')"),
+        decimals: z.number().int().min(0).max(18).optional().describe("If known; otherwise looked up on-chain"),
+        dry: z.boolean().default(true),
+      },
+    },
+    async (input) => {
+      try {
+        return ok(await sendSpl(loadConfig(), input as never));
+      } catch (e) {
+        return fail(e);
+      }
+    },
+  );
+
+  server.registerTool(
     "hydra_swap_execute",
     {
       description:
-        "Execute an end-to-end cross-chain swap via NEAR Intents 1Click. Auto-routes the origin send based on the asset's chain: NEAR-side FTs use ft_transfer; bridged EVM (ETH/ARB/BASE/POL/BSC/OP/AVAX/Aurora) routes through send_evm using the derived foreign-chain address; bridged BTC and SOL use their native sends. SAFE: dry=true returns the inferred route + previewed quote request. Set dry=false to fetch a non-dry quote, send the origin asset to the depositAddress, and submit the deposit hash. Pre-conditions: derived address must hold the origin asset + native gas on its chain; NEAR account pays for the MPC sign request.",
+        "Execute an end-to-end cross-chain swap via NEAR Intents 1Click. Auto-routes the origin send by asset: NEAR-side FTs use ft_transfer; bridged EVM (ETH/ARB/BASE/POL/BSC/OP/AVAX/Aurora) routes through send_evm using a derived foreign-chain address; native BTC and SOL use their native sends; SPL tokens (nep141:sol-{mint}.omft.near) route through send_spl with auto-ATA creation. SAFE: dry=true returns the inferred route + previewed quote request. Set dry=false to fetch a non-dry quote, send the origin asset to the depositAddress, and submit the deposit hash. Pre-conditions: derived address must hold the origin asset + native gas on its chain; NEAR account pays for the MPC sign request.",
       inputSchema: {
         originAsset: z.string().describe("nep141:<asset>. NEAR-side: nep141:wrap.near. Bridged: nep141:eth-0x...omft.near, nep141:btc.omft.near, nep141:sol.omft.near, etc."),
         destinationAsset: z.string(),

@@ -59,7 +59,7 @@ CLI for humans. MCP server for Claude Code, Cursor, OpenAI Agents SDK, anything 
 | **BNB Chain**  | ✅ | ✅ | ✅ | ✅ ERC-20 | ✅ | ✅ |
 | **Avalanche**  | ✅ | ✅ | ✅ | ✅ ERC-20 | ✅ | ✅ |
 | **Aurora**     | ✅ | ✅ | ✅ | ✅ ERC-20 | ✅ | ✅ |
-| **Solana**     | ✅ | ✅ | ✅ | 🟡 SPL TBD | 🟡 native only | ✅ |
+| **Solana**     | ✅ | ✅ | ✅ | ✅ SPL | ✅ native + SPL | ✅ |
 
 ---
 
@@ -185,7 +185,8 @@ The same flow works EVM-origin: pass `nep141:eth-0x...omft.near` as `--from` and
 | `hydra_contract_call` | State-changing NEAR contract call |
 | `hydra_send_evm` | Send on any EVM chain via Chain Signatures (native or ERC-20) |
 | `hydra_send_btc` | Send BTC via Chain Signatures |
-| `hydra_send_solana` | Send SOL via Chain Signatures |
+| `hydra_send_solana` | Send native SOL via Chain Signatures |
+| `hydra_send_spl` | Send a Solana SPL token via Chain Signatures (auto-creates dest ATA) |
 | `hydra_swap_execute` | End-to-end cross-chain swap, auto-routed by origin chain |
 
 Every signing tool throws unless `policy.readOnly = false`, and defaults `dry: true`. See [SECURITY.md](SECURITY.md).
@@ -289,8 +290,9 @@ Built on:
 |---|---|
 | **v0.1** | Read-only across 10 chains; 1Click swap discovery |
 | **v0.2** | NEAR sends + contract writes; EVM send via Chain Signatures; NEAR-origin swap_execute; policy layer |
-| **v0.3** *(now)* | BTC + Solana sends; swap_execute auto-routes 4 origin chains. Read AND write working on every chain. |
-| **v0.4** | Solana SPL tokens; raw NEAR Intents (deposits, solver-relay); Omnibridge |
+| **v0.3** | BTC + Solana sends; swap_execute auto-routes 4 origin chains. |
+| **v0.4** *(now)* | Solana SPL token send via Chain Signatures; SPL-origin swap_execute (auto-creates dest ATA, looks up real mint via 1Click tokens). |
+| **v0.5** | Raw NEAR Intents (deposits, solver-relay); Omnibridge; nep245 multi-token bridges. |
 | **v0.5** | Shade Agent deploy/whitelist/status; NEP-366 meta-transactions |
 | **v1.0** | Function-call key automation; per-tool confirmations; `hydra do "<natural language>"` goal verb |
 

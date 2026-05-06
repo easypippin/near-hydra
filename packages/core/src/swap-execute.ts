@@ -1,5 +1,5 @@
-import { getSwapQuote, getSwapStatus, submitSwapDeposit } from "./intents.js";
-import { sendFt, sendEvm, sendBtc, sendSolana } from "./sends.js";
+import { getSwapQuote, getSwapStatus, listSwapTokens, submitSwapDeposit } from "./intents.js";
+import { sendFt, sendEvm, sendBtc, sendSolana, sendSpl } from "./sends.js";
 import { ensureSigningAllowed, ensureNearSigner } from "./policy.js";
 import type { HydraConfig } from "./config.js";
 import type { EvmChain, SupportedChain } from "./chains.js";
@@ -24,7 +24,8 @@ type OriginRoute =
   | { kind: "evm-native"; chain: EvmChain }
   | { kind: "evm-erc20"; chain: EvmChain; token: string }
   | { kind: "btc-native" }
-  | { kind: "solana-native" };
+  | { kind: "solana-native" }
+  | { kind: "solana-spl"; mint: string };
 
 const OMFT_PREFIX_TO_CHAIN: Record<string, SupportedChain> = {
   eth: "ethereum",
@@ -76,9 +77,8 @@ function inferOriginRoute(originAsset: string): OriginRoute {
   }
   if (chain === "solana") {
     if (dash >= 0) {
-      throw new Error(
-        `Solana SPL tokens (e.g. ${originAsset}) are not yet routable. Native SOL works via nep141:sol.omft.near.`,
-      );
+      const mint = head.slice(dash + 1);
+      return { kind: "solana-spl", mint };
     }
     return { kind: "solana-native" };
   }
@@ -166,6 +166,30 @@ export async function swapExecute(cfg: HydraConfig, args: SwapExecuteArgs) {
     case "solana-native":
       sendResult = await sendSolana(cfg, { to: depositAddress, lamports: amountIn, dry: false });
       break;
+    case "solana-spl": {
+      // The "mint" in the omft asset id is a NEAR-side identifier, not the
+      // real Solana base58 mint. Look up the actual mint via 1Click's tokens.
+      const tokens = (await listSwapTokens(cfg)) as Array<{
+        assetId: string;
+        contractAddress?: string;
+        decimals?: number;
+      }>;
+      const tokenInfo = tokens.find((t) => t.assetId === args.originAsset);
+      if (!tokenInfo?.contractAddress) {
+        throw new Error(
+          `Could not resolve Solana mint for ${args.originAsset} from 1Click tokens. ` +
+            `Use hydra_send_spl directly with the correct mint, or check that this asset is listed.`,
+        );
+      }
+      sendResult = await sendSpl(cfg, {
+        mint: tokenInfo.contractAddress,
+        to: depositAddress,
+        amount: amountIn,
+        decimals: tokenInfo.decimals,
+        dry: false,
+      });
+      break;
+    }
   }
 
   const txHash = (sendResult as { txHash?: string }).txHash;

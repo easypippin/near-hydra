@@ -70,4 +70,6 @@ You called the [Chain Signatures](https://docs.near.org/chain-abstraction/chain-
 
 No data left your machine except the read query to NEAR RPC and the chain RPCs for balances. No keys to manage. No bridge accounts to set up.
 
-That's the read side. [Example 2](./02-claude-code-mcp.md) shows the same primitives exposed to Claude Code as MCP tools, plus the signing path.
+That's the read side. Continue with:
+- [Example 2 — Claude Code MCP](./02-claude-code-mcp.md): same primitives as MCP tools, plus the signing path.
+- [Example 3 — your first cross-chain swap](./03-cross-chain-swap.md): NEAR-origin, EVM-origin, and SPL-origin walkthroughs.

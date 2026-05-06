@@ -1,4 +1,16 @@
 import { encodeFunctionData, isAddress, type Hex } from "viem";
+import {
+  Connection,
+  PublicKey,
+  SystemProgram,
+  Transaction as SolanaTransaction,
+} from "@solana/web3.js";
+import {
+  getAssociatedTokenAddress,
+  getMint,
+  createAssociatedTokenAccountInstruction,
+  createTransferCheckedInstruction,
+} from "@solana/spl-token";
 import { adapterFor, mpcContract, deriveAddress, DEFAULT_PATHS, type EvmChain } from "./chains.js";
 import { nearAccount } from "./near.js";
 import {
@@ -245,6 +257,46 @@ export async function sendBtc(cfg: HydraConfig, args: SendBtcArgs) {
   return { dry: false, plan, txHash: hash, signedTx };
 }
 
+function solanaConn(cfg: HydraConfig): Connection {
+  return new Connection(cfg.rpc.solana);
+}
+
+// Hand-rolled Solana sign-and-broadcast that bypasses chainsig.js v1.1.14's
+// Solana adapter (its finalizeTransactionSigning is structurally broken: prepare
+// returns a wrapped object but finalize accesses methods only on the inner Tx).
+// We compile the message, ask the MPC for an Ed25519 signature over it, attach
+// it, and broadcast directly via @solana/web3.js.
+async function signAndBroadcastSolanaTx(
+  cfg: HydraConfig,
+  tx: SolanaTransaction,
+  fromAddress: string,
+  path: string,
+): Promise<{ txHash: string; signedTxBase64: string }> {
+  const conn = solanaConn(cfg);
+  const { blockhash } = await conn.getLatestBlockhash();
+  tx.recentBlockhash = blockhash;
+  tx.feePayer = new PublicKey(fromAddress);
+
+  const messageBytes = tx.compileMessage().serialize();
+  const payload = Array.from(messageBytes);
+
+  const signerAccount = nearAccount(cfg);
+  const contract = mpcContract(cfg);
+  const sigs = (await contract.sign({
+    payloads: [payload],
+    path,
+    keyType: "Eddsa",
+    signerAccount,
+  })) as unknown as Array<{ signature: number[] }>;
+
+  const sigBytes = Buffer.from(sigs[0].signature);
+  tx.addSignature(new PublicKey(fromAddress), sigBytes);
+
+  const serialized = tx.serialize();
+  const txHash = await conn.sendRawTransaction(serialized);
+  return { txHash, signedTxBase64: Buffer.from(serialized).toString("base64") };
+}
+
 export interface SendSolanaArgs {
   predecessor?: string;
   path?: string;
@@ -259,8 +311,6 @@ export async function sendSolana(cfg: HydraConfig, args: SendSolanaArgs) {
   const predecessor = args.predecessor ?? cfg.account!.id;
   const path = args.path ?? DEFAULT_PATHS.solana;
 
-  // Use deriveAddress's Solana workaround (chainsig.js v1.1.14 collapses Ed25519
-  // keys to SEC1 hex in its adapter, so we go straight to the MPC contract).
   const { address: from } = await deriveAddress(cfg, "solana", predecessor, path);
 
   const plan = {
@@ -272,32 +322,73 @@ export async function sendSolana(cfg: HydraConfig, args: SendSolanaArgs) {
   };
   if (args.dry !== false) return { dry: true, plan };
 
-  const adapter = adapterFor(cfg, "solana");
-  const { transaction, hashesToSign } = await adapter.prepareTransactionForSigning({
+  const tx = new SolanaTransaction().add(
+    SystemProgram.transfer({
+      fromPubkey: new PublicKey(from),
+      toPubkey: new PublicKey(args.to),
+      lamports: Number(BigInt(args.lamports)),
+    }),
+  );
+  const { txHash, signedTxBase64 } = await signAndBroadcastSolanaTx(cfg, tx, from, path);
+  return { dry: false, plan, txHash, signedTx: signedTxBase64 };
+}
+
+export interface SendSplArgs {
+  predecessor?: string;
+  path?: string;
+  mint: string;
+  to: string;
+  amount: string;
+  decimals?: number;
+  dry?: boolean;
+}
+
+export async function sendSpl(cfg: HydraConfig, args: SendSplArgs) {
+  ensureSigningAllowed(cfg);
+  ensureNearSigner(cfg);
+  const predecessor = args.predecessor ?? cfg.account!.id;
+  const path = args.path ?? DEFAULT_PATHS.solana;
+
+  const { address: from } = await deriveAddress(cfg, "solana", predecessor, path);
+  const fromPk = new PublicKey(from);
+  const toPk = new PublicKey(args.to);
+  const mintPk = new PublicKey(args.mint);
+
+  const sourceAta = await getAssociatedTokenAddress(mintPk, fromPk);
+  const destAta = await getAssociatedTokenAddress(mintPk, toPk);
+
+  const conn = solanaConn(cfg);
+
+  let decimals = args.decimals;
+  if (decimals === undefined) {
+    const mintInfo = await getMint(conn, mintPk);
+    decimals = mintInfo.decimals;
+  }
+
+  const destAtaInfo = await conn.getAccountInfo(destAta);
+
+  const plan = {
+    kind: "send_spl" as const,
     from,
     to: args.to,
-    amount: BigInt(args.lamports),
-  });
+    mint: args.mint,
+    amount: args.amount,
+    decimals,
+    sourceAta: sourceAta.toBase58(),
+    destAta: destAta.toBase58(),
+    needsCreateDestAta: destAtaInfo === null,
+    derivedFrom: { predecessor, path },
+  };
+  if (args.dry !== false) return { dry: true, plan };
 
-  const signerAccount = nearAccount(cfg);
-  const contract = mpcContract(cfg);
-  const sigs = await contract.sign({
-    payloads: hashesToSign,
-    path,
-    keyType: "Eddsa",
-    signerAccount,
-  });
-  const signedTx = (adapter as unknown as {
-    finalizeTransactionSigning: (a: {
-      transaction: unknown;
-      rsvSignatures: unknown;
-      senderAddress: string;
-    }) => string;
-  }).finalizeTransactionSigning({
-    transaction,
-    rsvSignatures: sigs[0],
-    senderAddress: from,
-  });
-  const { hash } = await adapter.broadcastTx(signedTx);
-  return { dry: false, plan, txHash: hash, signedTx };
+  const tx = new SolanaTransaction();
+  if (destAtaInfo === null) {
+    tx.add(createAssociatedTokenAccountInstruction(fromPk, destAta, toPk, mintPk));
+  }
+  tx.add(
+    createTransferCheckedInstruction(sourceAta, mintPk, destAta, fromPk, BigInt(args.amount), decimals),
+  );
+
+  const { txHash, signedTxBase64 } = await signAndBroadcastSolanaTx(cfg, tx, from, path);
+  return { dry: false, plan, txHash, signedTx: signedTxBase64 };
 }

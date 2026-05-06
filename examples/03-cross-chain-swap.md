@@ -156,6 +156,27 @@ Or check on [Solscan](https://solscan.io/) directly.
 
 You used 1Click as the solver network and Chain Signatures as the cross-chain identity layer. Each is independently strong; together they collapse cross-chain UX to a single tool call.
 
+## SPL-origin variant
+
+To swap **$WIF on Solana → SOL** (or any other destination), pre-fund your derived Solana address with WIF and a tiny bit of SOL for fees:
+
+```bash
+# Find your derived Solana address
+near-hydra address derive -c solana -p alice.near
+
+# Send WIF + a small amount of SOL to that address from any wallet.
+# Then:
+
+near-hydra swap execute \
+  --from nep141:sol-b9c68f94ec8fd160137af8cdfe5e61cd68e2afba.omft.near \
+  --to nep141:wrap.near \
+  --amount 1000000000 \
+  --recipient alice.near \
+  --broadcast
+```
+
+Hydra resolves the real SPL mint (`EKpQGSJtjMFqKZ9KQanSqYXRcF8fBopzLHYxdM65zcjm`) by looking it up in 1Click's tokens list, derives the source ATA, auto-creates the deposit-side ATA if needed, signs via Chain Signatures with Ed25519, and broadcasts. SPL transfer fees come from the derived address's SOL balance.
+
 ## EVM-origin variant
 
 To swap **USDT on Ethereum → SOL**, change the origin asset and have your derived ETH address pre-funded with USDT + a tiny bit of ETH for gas:

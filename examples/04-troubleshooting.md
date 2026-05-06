@@ -100,11 +100,20 @@ For agent use, **don't paste a full-access key**. Generate a function-call acces
 
 ---
 
-## "Solana SPL tokens are not yet routable" (during swap_execute)
+## SPL transfer fails because destination ATA can't be created
 
-`hydra_swap_execute` recognizes native SOL (`nep141:sol.omft.near`) but not SPL token bridges (`nep141:sol-<address>.omft.near`) because we haven't wired SPL transfer construction yet. Tracked for v0.4.
+`hydra_send_spl` automatically creates the destination ATA if it doesn't exist, but the sender (your derived Solana address) must have enough SOL to cover the rent (~0.002 SOL) plus the tx fee (~0.000005 SOL).
 
-Workaround: do the swap manually — `hydra_swap_quote` followed by `hydra_swap_submit_deposit` against the deposit address from the quote. You'd need to construct the SPL transfer outside hydra for now.
+Send a tiny amount of SOL to your derived Solana address first via `hydra_send_solana` from any funded source, or just ask Phantom to send to it.
+
+---
+
+## "Could not resolve Solana mint for nep141:sol-…omft.near"
+
+`hydra_swap_execute` looks up the real Solana mint via 1Click's `getTokens` API. If the asset id isn't in the response, the lookup fails. Either:
+
+- Verify the asset id by running `near-hydra swap tokens` and finding it.
+- Use `hydra_send_spl` directly with the real Solana mint address.
 
 ---
 
