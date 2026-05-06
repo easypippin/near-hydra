@@ -324,10 +324,17 @@ Self-funded; not seeking grants currently. If you want to support, contribute PR
 
 ---
 
-## Examples
+## Documentation
 
-- [Multi-chain identity in 30 seconds](examples/01-multichain-identity.md) — derive addresses on every chain from one NEAR account, look up balances.
+**Examples / cookbook:**
+- [Multi-chain identity in 30 seconds](examples/01-multichain-identity.md) — derive addresses on every chain from one NEAR account.
 - [Wire into Claude Code](examples/02-claude-code-mcp.md) — MCP setup, sample prompts, signing flow, safety levers.
+- [Your first cross-chain swap](examples/03-cross-chain-swap.md) — full walkthrough of swapping wNEAR → SOL on Solana, dry-run + broadcast.
+- [Troubleshooting](examples/04-troubleshooting.md) — RPC rate limits, MPC contract changes, gas, ESM bug, common gotchas.
+
+**Reference:**
+- [Concepts](docs/CONCEPTS.md) — Chain Signatures, NEAR Intents, account model, why this only works on NEAR.
+- [Tool reference](docs/TOOLS.md) — every MCP tool, every input field, every output shape.
 
 ## Contributing
 
