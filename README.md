@@ -324,9 +324,14 @@ Self-funded; not seeking grants currently. If you want to support, contribute PR
 
 ---
 
+## Examples
+
+- [Multi-chain identity in 30 seconds](examples/01-multichain-identity.md) — derive addresses on every chain from one NEAR account, look up balances.
+- [Wire into Claude Code](examples/02-claude-code-mcp.md) — MCP setup, sample prompts, signing flow, safety levers.
+
 ## Contributing
 
-Issues + PRs welcome. The roadmap above is the priority list. For non-trivial work, please open an issue first.
+Issues + PRs welcome. See [CONTRIBUTING.md](CONTRIBUTING.md). The roadmap above is the priority list.
 
 ## License
 
