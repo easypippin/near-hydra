@@ -198,3 +198,108 @@ function pickTxHash(result: unknown): string | undefined {
   const r = result as { transaction?: { hash?: string }; transaction_outcome?: { id?: string } };
   return r?.transaction?.hash ?? r?.transaction_outcome?.id;
 }
+
+export interface SendBtcArgs {
+  predecessor?: string;
+  path?: string;
+  to: string;
+  satoshi: string;
+  dry?: boolean;
+}
+
+export async function sendBtc(cfg: HydraConfig, args: SendBtcArgs) {
+  ensureSigningAllowed(cfg);
+  ensureNearSigner(cfg);
+  const predecessor = args.predecessor ?? cfg.account!.id;
+  const path = args.path ?? "bitcoin-1";
+  const adapter = _adapterFor(cfg, "bitcoin");
+  const { address: from, publicKey } = await adapter.deriveAddressAndPublicKey(predecessor, path);
+
+  const plan = {
+    kind: "send_btc" as const,
+    from,
+    to: args.to,
+    satoshi: args.satoshi,
+    derivedFrom: { predecessor, path },
+  };
+  if (args.dry !== false) return { dry: true, plan };
+
+  const { transaction, hashesToSign } = await adapter.prepareTransactionForSigning({
+    from,
+    to: args.to,
+    value: args.satoshi,
+    publicKey,
+  });
+
+  const signerAccount = nearAccount(cfg);
+  const contract = _mpcContract(cfg);
+  const rsvSignatures = await contract.sign({
+    payloads: hashesToSign,
+    path,
+    keyType: "Ecdsa",
+    signerAccount,
+  });
+  const signedTx = adapter.finalizeTransactionSigning({
+    transaction,
+    rsvSignatures: rsvSignatures as unknown[],
+  }) as string;
+  const { hash } = await adapter.broadcastTx(signedTx);
+  return { dry: false, plan, txHash: hash, signedTx };
+}
+
+export interface SendSolanaArgs {
+  predecessor?: string;
+  path?: string;
+  to: string;
+  lamports: string;
+  dry?: boolean;
+}
+
+export async function sendSolana(cfg: HydraConfig, args: SendSolanaArgs) {
+  ensureSigningAllowed(cfg);
+  ensureNearSigner(cfg);
+  const predecessor = args.predecessor ?? cfg.account!.id;
+  const path = args.path ?? "solana-1";
+
+  // Use the derive workaround (chainsig.js Solana adapter's derive is broken in v1.1.14).
+  const { deriveAddress } = await import("./chains.js");
+  const { address: from } = await deriveAddress(cfg, "solana", predecessor, path);
+
+  const plan = {
+    kind: "send_sol" as const,
+    from,
+    to: args.to,
+    lamports: args.lamports,
+    derivedFrom: { predecessor, path },
+  };
+  if (args.dry !== false) return { dry: true, plan };
+
+  const adapter = _adapterFor(cfg, "solana");
+  const { transaction, hashesToSign } = await adapter.prepareTransactionForSigning({
+    from,
+    to: args.to,
+    amount: BigInt(args.lamports),
+  });
+
+  const signerAccount = nearAccount(cfg);
+  const contract = _mpcContract(cfg);
+  const sigs = await contract.sign({
+    payloads: hashesToSign,
+    path,
+    keyType: "Eddsa",
+    signerAccount,
+  });
+  const signedTx = (adapter as unknown as {
+    finalizeTransactionSigning: (a: {
+      transaction: unknown;
+      rsvSignatures: unknown;
+      senderAddress: string;
+    }) => string;
+  }).finalizeTransactionSigning({
+    transaction,
+    rsvSignatures: sigs[0],
+    senderAddress: from,
+  });
+  const { hash } = await adapter.broadcastTx(signedTx);
+  return { dry: false, plan, txHash: hash, signedTx };
+}

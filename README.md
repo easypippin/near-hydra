@@ -118,10 +118,16 @@ hydra call my-contract.near my_method -a '{"x":1}' --deposit-yocto 1
 hydra send evm -c base --to 0x... --value-wei 1000000000000000
 hydra send evm -c polygon --to ignored \
   --erc20-token 0x3c49... --erc20-recipient 0xABCD... --erc20-amount 1000000
+hydra send btc bc1q... 50000                                     # 50000 satoshi (0.0005 BTC)
+hydra send sol vquhA... 1000000                                  # 1000000 lamports (0.001 SOL)
 
-# End-to-end cross-chain swap (NEAR-origin)
-hydra swap execute --from nep141:wrap.near --to nep141:eth.bridge.near \
-  --amount 100000000000000000000000 --recipient 0xRecipient...
+# Cross-chain swap, auto-routes by origin chain
+hydra swap execute --from nep141:wrap.near \
+  --to nep141:sol.omft.near --amount 1000000000000000000000000 --recipient <sol-addr>
+hydra swap execute --from nep141:eth-0xdac17...omft.near \
+  --to nep141:sol.omft.near --amount 1000000 --recipient <sol-addr>     # USDT-on-Eth → SOL
+hydra swap execute --from nep141:btc.omft.near \
+  --to nep141:wrap.near --amount 100000 --recipient alice.near          # BTC → wNEAR
 ```
 
 ---
@@ -151,7 +157,9 @@ hydra swap execute --from nep141:wrap.near --to nep141:eth.bridge.near \
 | `hydra_send_ft` | Send a NEP-141 fungible token (ft_transfer) |
 | `hydra_contract_call` | State-changing call to a NEAR contract |
 | `hydra_send_evm` | Send on any EVM chain via Chain Signatures (native or ERC-20) |
-| `hydra_swap_execute` | End-to-end NEAR-origin cross-chain swap (quote → ft_transfer → submit deposit) |
+| `hydra_send_btc` | Send BTC via Chain Signatures (UTXO via Mempool API) |
+| `hydra_send_solana` | Send SOL via Chain Signatures |
+| `hydra_swap_execute` | End-to-end cross-chain swap, auto-routes by origin chain (NEAR / EVM / BTC / Solana) |
 
 **Every signing tool defaults `dry: true`.** Dry mode returns the plan (and for EVM, the encoded calldata + derived sender). Set `dry: false` to actually broadcast. On top of that, `policy.readOnly` defaults to `true` — even with `dry: false`, a tool throws unless the user has explicitly opted out of read-only.
 
@@ -216,8 +224,8 @@ Every RPC is overridable individually. Public endpoints rate-limit you? Point at
 | Version | Scope |
 |---|---|
 | **v0.1** | Read-only across 10 chains + 1Click swap discovery |
-| **v0.2** *(now)* | NEAR sends + contract writes, EVM send via Chain Signatures, end-to-end NEAR-origin swap_execute, policy layer (read-only-by-default + dry-run-by-default + value caps) |
-| **v0.3** | EVM/Solana/Bitcoin-origin swap_execute; raw NEAR Intents (deposits, solver-relay); Omnibridge; Solana + BTC sends |
+| **v0.2** | NEAR sends + contract writes, EVM send via Chain Signatures, NEAR-origin swap_execute, policy layer |
+| **v0.3** *(now)* | BTC + Solana sends; swap_execute auto-routes by origin chain (NEAR / EVM / BTC / Solana). All 10 chains support read AND write. |
 | **v0.4** | Shade Agent deploy/whitelist/status; NEP-366 meta-transactions |
 | **v1.0** | Function-call access key automation; allowlist/allowance enforcement; `hydra do "<natural language>"` goal verb |
 

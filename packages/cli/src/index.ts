@@ -17,6 +17,8 @@ import {
   sendFt,
   callContract,
   sendEvm,
+  sendBtc,
+  sendSolana,
   swapExecute,
   type SupportedChain,
   type EvmChain,
@@ -290,6 +292,34 @@ send
       }
     },
   );
+
+send
+  .command("btc <to> <satoshi>")
+  .description("Send BTC via Chain Signatures from your derived Bitcoin address")
+  .option("--predecessor <id>")
+  .option("--path <s>")
+  .option("--broadcast", "Actually broadcast")
+  .action(async (to: string, satoshi: string, opts: { predecessor?: string; path?: string; broadcast?: boolean }) => {
+    try {
+      out(await sendBtc(loadConfig(), { to, satoshi, predecessor: opts.predecessor, path: opts.path, dry: !opts.broadcast }));
+    } catch (e) {
+      fail(e);
+    }
+  });
+
+send
+  .command("sol <to> <lamports>")
+  .description("Send SOL via Chain Signatures from your derived Solana address")
+  .option("--predecessor <id>")
+  .option("--path <s>")
+  .option("--broadcast", "Actually broadcast")
+  .action(async (to: string, lamports: string, opts: { predecessor?: string; path?: string; broadcast?: boolean }) => {
+    try {
+      out(await sendSolana(loadConfig(), { to, lamports, predecessor: opts.predecessor, path: opts.path, dry: !opts.broadcast }));
+    } catch (e) {
+      fail(e);
+    }
+  });
 
 send
   .command("evm")

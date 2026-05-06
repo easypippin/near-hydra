@@ -17,6 +17,8 @@ import {
   sendFt,
   callContract,
   sendEvm,
+  sendBtc,
+  sendSolana,
   swapExecute,
   type SupportedChain,
   type EvmChain,
@@ -345,12 +347,56 @@ export function registerTools(server: McpServer) {
   );
 
   server.registerTool(
+    "hydra_send_btc",
+    {
+      description:
+        "Send BTC from a Chain-Signature-derived Bitcoin address. UTXO selection via Mempool API. SAFE: dry=true returns the plan; dry=false signs via MPC and broadcasts. Amount in satoshis (1 BTC = 100,000,000 satoshi). Requires the derived address to have spendable UTXOs.",
+      inputSchema: {
+        predecessor: z.string().optional().describe("NEAR account; defaults to configured account"),
+        path: z.string().optional().describe("Derivation path; defaults to 'bitcoin-1'"),
+        to: z.string().describe("Recipient Bitcoin address"),
+        satoshi: z.string().describe("Amount in satoshis as a string"),
+        dry: z.boolean().default(true),
+      },
+    },
+    async (input) => {
+      try {
+        return ok(await sendBtc(loadConfig(), input as never));
+      } catch (e) {
+        return fail(e);
+      }
+    },
+  );
+
+  server.registerTool(
+    "hydra_send_solana",
+    {
+      description:
+        "Send native SOL from a Chain-Signature-derived Solana address. SAFE: dry=true returns the plan. Amount in lamports (1 SOL = 1,000,000,000 lamports). Requires the derived address to have SOL.",
+      inputSchema: {
+        predecessor: z.string().optional(),
+        path: z.string().optional().describe("Derivation path; defaults to 'solana-1'"),
+        to: z.string().describe("Recipient Solana address (base58)"),
+        lamports: z.string().describe("Amount in lamports as a string"),
+        dry: z.boolean().default(true),
+      },
+    },
+    async (input) => {
+      try {
+        return ok(await sendSolana(loadConfig(), input as never));
+      } catch (e) {
+        return fail(e);
+      }
+    },
+  );
+
+  server.registerTool(
     "hydra_swap_execute",
     {
       description:
-        "Execute a NEAR-origin cross-chain swap end-to-end via NEAR Intents 1Click: get a non-dry quote, ft_transfer the origin asset to the depositAddress, submit the deposit tx hash. Returns intent + tx info; poll hydra_swap_status to watch settlement. SAFE: dry=true by default — set dry=false to actually move funds. v0.2 supports NEAR-origin assets only (originAsset must start with 'nep141:').",
+        "Execute an end-to-end cross-chain swap via NEAR Intents 1Click. Auto-routes the origin send based on the asset's chain: NEAR-side FTs use ft_transfer; bridged EVM (ETH/ARB/BASE/POL/BSC/OP/AVAX/Aurora) routes through send_evm using the derived foreign-chain address; bridged BTC and SOL use their native sends. SAFE: dry=true returns the inferred route + previewed quote request. Set dry=false to fetch a non-dry quote, send the origin asset to the depositAddress, and submit the deposit hash. Pre-conditions: derived address must hold the origin asset + native gas on its chain; NEAR account pays for the MPC sign request.",
       inputSchema: {
-        originAsset: z.string().describe("Must start with 'nep141:' (NEAR-side asset)"),
+        originAsset: z.string().describe("nep141:<asset>. NEAR-side: nep141:wrap.near. Bridged: nep141:eth-0x...omft.near, nep141:btc.omft.near, nep141:sol.omft.near, etc."),
         destinationAsset: z.string(),
         amount: z.string().describe("Amount in originAsset's base units"),
         recipient: z.string().describe("Destination-chain address"),

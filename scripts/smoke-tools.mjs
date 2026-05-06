@@ -19,6 +19,8 @@ const EXPECTED = [
   "hydra_send_ft",
   "hydra_contract_call",
   "hydra_send_evm",
+  "hydra_send_btc",
+  "hydra_send_solana",
   "hydra_swap_execute",
 ];
 
