@@ -1,0 +1,17 @@
+{
+  "name": "@near-hydra/cli",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "near-hydra": "./dist/index.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p ."
+  },
+  "dependencies": {
+    "@near-hydra/core": "0.0.1",
+    "commander": "^12.1.0"
+  }
+}

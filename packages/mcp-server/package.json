@@ -1,0 +1,18 @@
+{
+  "name": "@near-hydra/mcp-server",
+  "version": "0.0.1",
+  "type": "module",
+  "main": "./dist/index.js",
+  "bin": {
+    "near-hydra-mcp": "./dist/index.js"
+  },
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -p ."
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.29.0",
+    "@near-hydra/core": "0.0.1",
+    "zod": "^3.23.0"
+  }
+}
