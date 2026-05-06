@@ -9,11 +9,13 @@ Signs transactions across **10 chains** from a single account.
 Built for AI agents and humans.
 
 [![CI](https://github.com/nikshepsvn/near-hydra/actions/workflows/ci.yml/badge.svg)](https://github.com/nikshepsvn/near-hydra/actions/workflows/ci.yml)
-[![npm](https://img.shields.io/npm/v/near-hydra.svg?label=near-hydra)](https://www.npmjs.com/package/near-hydra)
-[![npm](https://img.shields.io/npm/v/near-hydra-mcp.svg?label=near-hydra-mcp&color=purple)](https://www.npmjs.com/package/near-hydra-mcp)
+[![npm: near-hydra](https://img.shields.io/npm/v/near-hydra.svg?label=near-hydra&color=cb3837)](https://www.npmjs.com/package/near-hydra)
+[![npm: near-hydra-mcp](https://img.shields.io/npm/v/near-hydra-mcp.svg?label=near-hydra-mcp&color=8957e5)](https://www.npmjs.com/package/near-hydra-mcp)
+[![npm downloads](https://img.shields.io/npm/dm/near-hydra.svg?color=cb3837)](https://www.npmjs.com/package/near-hydra)
+[![GitHub stars](https://img.shields.io/github/stars/nikshepsvn/near-hydra?style=flat&color=yellow)](https://github.com/nikshepsvn/near-hydra/stargazers)
 [![License](https://img.shields.io/badge/license-Apache_2.0-blue.svg)](LICENSE)
-![Node](https://img.shields.io/badge/node-%E2%89%A520-brightgreen)
-![Chains](https://img.shields.io/badge/chains-10-orange)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.x-3178c6?logo=typescript&logoColor=white)](https://www.typescriptlang.org/)
+![Node](https://img.shields.io/badge/node-%E2%89%A520-3c873a?logo=node.js&logoColor=white)
 
 <br>
 
