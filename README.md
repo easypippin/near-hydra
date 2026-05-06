@@ -29,7 +29,9 @@ Built for AI agents and humans.
 npx -y near-hydra account balance-all near
 ```
 
-Returns ten real chain addresses + balances derived from the NEAR account `near`. No config file, no key, no signup. Defaults to read-only mainnet.
+Returns ten real chain addresses + balances derived from the NEAR account `near`. No config file, no key, no signup. Defaults to read-only mainnet. Requires Node ≥ 20.
+
+**Latest release:** [v0.4.0](https://github.com/nikshepsvn/near-hydra/releases/tag/v0.4.0) (Solana SPL support).
 
 ## What you can do, in two lines
 
@@ -231,10 +233,10 @@ Every signing tool throws unless `policy.readOnly = false`, and defaults `dry: t
         │  └─────────────────────────────────┘  │
         └─────┬─────┬──────┬────────┬───────────┘
               │     │      │        │
-              ▼     ▼      ▼        ▼
-       near-api-js chainsig.js  one-click  viem / @solana/web3.js
-       (NEAR)      (MPC across  (Intents)  (chain RPCs)
-                    every chain)
+              ▼          ▼            ▼              ▼
+        @near-js/*   chainsig.js   1Click SDK   viem / @solana/web3.js
+        (NEAR)       (MPC across   (Intents)    (chain RPCs)
+                      every chain)
 ```
 
 `near-hydra` doesn't reinvent any protocol. It composes the official libraries behind one config, one auth model, one tool surface — and adds the connective tissue (memoization, error mapping, policy, dry-run-by-default) that an autonomous agent actually needs.
@@ -254,10 +256,11 @@ Defaults work out of the box. Override via `~/.near-hydra/config.json` or env va
 | `NEAR_HYDRA_PRIVATE_KEY` | `ed25519:...` (only needed for signing) |
 | `NEAR_HYDRA_READ_ONLY` | `false` to enable signing (default `true`) |
 | `NEAR_HYDRA_MAX_VALUE_NEAR` | Cap a single NEAR transfer (e.g. `"5"`) |
-| `NEAR_HYDRA_MAX_VALUE_WEI` | Cap a single EVM native transfer in wei |
+| `NEAR_HYDRA_MAX_VALUE_WEI` | Cap a single EVM native transfer in wei (does not cap ERC-20 transfers — those go through `data` not `value`) |
 | `NEAR_HYDRA_RPC_<CHAIN>` | Override any chain's RPC |
 | `NEAR_HYDRA_MPC_CONTRACT` | Override MPC contract (advanced) |
 | `NEAR_HYDRA_ONECLICK_API_KEY` | 1Click partner key (skips 0.2% fee) |
+| `NEAR_HYDRA_ONECLICK_BASE_URL` | Override 1Click base URL (advanced) |
 | `NEAR_HYDRA_CONFIG` | Path to alternate config file |
 
 `<CHAIN>` is one of `NEAR`, `ETHEREUM`, `POLYGON`, `ARBITRUM`, `BASE`, `OPTIMISM`, `BNB`, `AVALANCHE`, `AURORA`, `SOLANA`, `BITCOIN_MEMPOOL`. When public endpoints rate-limit you, point at Alchemy / QuickNode / dRPC / your own infra.
@@ -299,9 +302,9 @@ Built on:
 
 - [chainsig.js](https://github.com/NearDeFi/chainsig.js) — cross-chain MPC signing
 - [@defuse-protocol/one-click-sdk-typescript](https://github.com/defuse-protocol/one-click-sdk-typescript) — NEAR Intents 1Click
-- [@near-js/*](https://github.com/near/near-api-js) — NEAR-native ops (v7 modular)
+- [@near-js/accounts, /providers, /signers, /crypto, /utils](https://github.com/near/near-api-js) — NEAR-native ops (modular packages, v2.x)
 - [viem](https://viem.sh/) — EVM client
-- [@solana/web3.js](https://github.com/solana-labs/solana-web3.js) — Solana client
+- [@solana/web3.js](https://github.com/solana-labs/solana-web3.js) + [@solana/spl-token](https://github.com/solana-labs/solana-program-library/tree/master/token/js) — Solana + SPL token clients
 - [@modelcontextprotocol/sdk](https://github.com/modelcontextprotocol/typescript-sdk) — MCP server
 
 ---
@@ -313,7 +316,7 @@ Built on:
 | **v0.1** | Read-only across 10 chains; 1Click swap discovery |
 | **v0.2** | NEAR sends + contract writes; EVM send via Chain Signatures; NEAR-origin swap_execute; policy layer |
 | **v0.3** | BTC + native-Solana sends; swap_execute auto-routes 4 origin chains |
-| **v0.4** *(now)* | Solana SPL token send (auto-creates dest ATA); SPL-origin swap_execute via real-mint lookup; Solana broadcast bug fix |
+| **v0.4** *(latest, on npm)* | Solana SPL token send (auto-creates dest ATA); SPL-origin swap_execute via real-mint lookup; Solana broadcast bug fix |
 | **v0.5** | Function-call access key generator (`hydra_create_agent_key`); arbitrary message signing (SIWE / SIWS via Chain Signatures); MCP resources for chains/tokens; auto-bootstrap gas via 1Click |
 | **v0.6** | Raw NEAR Intents (custom intents, solver-relay); Omnibridge; nep245 multi-token bridges; Shade Agent deploy/whitelist; NEP-366 meta-transactions |
 | **v1.0** | Per-tool confirmations; allowlist enforcement; `hydra do "<natural language>"` goal verb |
