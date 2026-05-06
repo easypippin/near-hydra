@@ -59,8 +59,15 @@ async function run() {
 
   const list = await call(2, "tools/list", {});
   const toolNames = (list?.result?.tools ?? []).map((t) => t.name).sort();
-  if (toolNames.length !== 17) {
-    throw new Error(`Expected 17 tools, got ${toolNames.length}: ${toolNames.join(", ")}`);
+  // Source of truth for the tool count is scripts/smoke-tools.mjs, which is
+  // the in-process registration test wired into CI alongside this stdio test.
+  // We intentionally check ≥ a minimum here so adding a tool only requires
+  // updating one file (smoke-tools.mjs).
+  const MIN_TOOLS = 18;
+  if (toolNames.length < MIN_TOOLS) {
+    throw new Error(
+      `Expected at least ${MIN_TOOLS} tools, got ${toolNames.length}: ${toolNames.join(", ")}`,
+    );
   }
   console.log(`✓ tools/list returned ${toolNames.length} tools`);
 
