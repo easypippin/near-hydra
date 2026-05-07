@@ -9,10 +9,39 @@ export function nearProvider(cfg: HydraConfig): JsonRpcProvider {
   return new JsonRpcProvider({ url: cfg.rpc.near });
 }
 
+/**
+ * Parse and validate a NEAR account key pair from an environment variable.
+ * Accepts the raw base58 string (without the "ed25519:" prefix) or the full
+ * prefixed form. Throws a descriptive error if the format is wrong so callers
+ * never get a silent KeyPair parsing failure.
+ */
+export function parseNearKeyPair(raw: string): KeyPair {
+  if (!raw || raw.trim().length === 0) {
+    throw new Error(
+      `NEAR_HYDRA_PRIVATE_KEY is empty. Provide a full ed25519 key — ` +
+        `e.g. "ed25519:4UVny..." (get from near-cli: near generate-key).`,
+    );
+  }
+  const trimmed = raw.trim();
+  const prefixed = trimmed.startsWith("ed25519:") ? trimmed : `ed25519:${trimmed}`;
+  try {
+    return KeyPair.fromString(prefixed as `ed25519:${string}`);
+  } catch {
+    throw new Error(
+      `NEAR_HYDRA_PRIVATE_KEY is not a valid ed25519 NEAR key. ` +
+        `Expected format: "ed25519:<58-char-base58>" (the full key including the "ed25519:" prefix). ` +
+        `Got: "${truncated(prefixed)}"`,
+    );
+  }
+}
+
+function truncated(s: string, len = 40): string {
+  return s.length > len ? `${s.slice(0, len)}…` : s;
+}
+
 export function nearSignerFromConfig(cfg: HydraConfig): Signer | undefined {
   if (!cfg.account?.privateKey) return undefined;
-  const kp = KeyPair.fromString(cfg.account.privateKey as `ed25519:${string}`);
-  return new KeyPairSigner(kp);
+  return new KeyPairSigner(parseNearKeyPair(cfg.account.privateKey));
 }
 
 export function nearAccount(cfg: HydraConfig, accountId?: string): Account {

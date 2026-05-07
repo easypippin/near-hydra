@@ -261,11 +261,27 @@ function solanaConn(cfg: HydraConfig): Connection {
   return new Connection(cfg.rpc.solana);
 }
 
-// Hand-rolled Solana sign-and-broadcast that bypasses chainsig.js v1.1.14's
-// Solana adapter (its finalizeTransactionSigning is structurally broken: prepare
-// returns a wrapped object but finalize accesses methods only on the inner Tx).
-// We compile the message, ask the MPC for an Ed25519 signature over it, attach
-// it, and broadcast directly via @solana/web3.js.
+// Solana Ed25519 signature length in bytes.
+const ED25519_SIG_LEN = 64;
+
+/**
+ * signAndBroadcastSolanaTx — hand-rolled Solana sign-and-broadcast.
+ *
+ * Background: chainsig.js v1.1.14's Solana adapter has a known bug where
+ * `finalizeTransactionSigning` wraps the transaction in an object whose
+ * inner method (`addSignature`) is only accessible on the bare SolanaTransaction
+ * prototype. The workaround below bypasses the adapter entirely and replicates
+ * the correct sign→attach→broadcast sequence directly.
+ *
+ * If you upgrade chainsig.js and the bug is fixed, set MIN_CHAINSIG_SOLANA_OK
+ * in chains.ts to the fixed version to use the official path instead.
+ *
+ * This implementation validates all return values strictly:
+ *   - Blockhash is non-empty
+ *   - Ed25519 signature is exactly 64 bytes
+ *   - Transaction serialization is non-empty
+ *   - Broadcast returns a real tx hash
+ */
 async function signAndBroadcastSolanaTx(
   cfg: HydraConfig,
   tx: SolanaTransaction,
@@ -273,11 +289,20 @@ async function signAndBroadcastSolanaTx(
   path: string,
 ): Promise<{ txHash: string; signedTxBase64: string }> {
   const conn = solanaConn(cfg);
+
+  // Fetch a recent, valid blockhash
   const { blockhash } = await conn.getLatestBlockhash();
+  if (!blockhash || blockhash.length === 0) {
+    throw new Error("Solana RPC returned an empty blockhash");
+  }
   tx.recentBlockhash = blockhash;
   tx.feePayer = new PublicKey(fromAddress);
 
+  // Extract the serialized message bytes we are asking the MPC to sign
   const messageBytes = tx.compileMessage().serialize();
+  if (messageBytes.length === 0) {
+    throw new Error("Solana transaction compiled to an empty message");
+  }
   const payload = Array.from(messageBytes);
 
   const signerAccount = nearAccount(cfg);
@@ -289,11 +314,31 @@ async function signAndBroadcastSolanaTx(
     signerAccount,
   })) as unknown as Array<{ signature: number[] }>;
 
-  const sigBytes = Buffer.from(sigs[0].signature);
+  if (!sigs || sigs.length === 0) {
+    throw new Error("MPC contract returned no signatures for Solana EdDSA sign request");
+  }
+  const sig = sigs[0].signature;
+
+  // Strict Ed25519 signature length validation
+  if (!Array.isArray(sig) || sig.length !== ED25519_SIG_LEN) {
+    throw new Error(
+      `MPC returned invalid Ed25519 signature: expected 64 bytes, got ${Array.isArray(sig) ? sig.length : typeof sig}`,
+    );
+  }
+
+  const sigBytes = Buffer.from(sig);
   tx.addSignature(new PublicKey(fromAddress), sigBytes);
 
   const serialized = tx.serialize();
+  if (serialized.length === 0) {
+    throw new Error("Signed Solana transaction serialized to empty bytes");
+  }
+
   const txHash = await conn.sendRawTransaction(serialized);
+  if (!txHash || txHash.length === 0) {
+    throw new Error("Solana sendRawTransaction returned an empty transaction hash");
+  }
+
   return { txHash, signedTxBase64: Buffer.from(serialized).toString("base64") };
 }
 

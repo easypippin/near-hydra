@@ -33,7 +33,7 @@
     "@near-js/utils": "^2.2.4",
     "@solana/spl-token": "^0.4.9",
     "@solana/web3.js": "^1.95.0",
-    "chainsig.js": "^1.1.14",
+    "chainsig.js": "^1.1.15",
     "viem": "^2.21.0"
   }
 }
